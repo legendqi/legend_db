@@ -72,7 +72,7 @@ impl Keyword {
         }
     }
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[derive(PartialEq)]
 pub enum Token {
     // 关键字

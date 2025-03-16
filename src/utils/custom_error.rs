@@ -1,17 +1,18 @@
 use std::io::Error;
 use std::num::{ParseFloatError, ParseIntError};
+use std::sync::Arc;
 
 //自定义错误类型
 pub type LegendDBResult<T> = Result<T, LegendDBError>;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Clone, thiserror::Error)]
 pub enum LegendDBError {
     #[error("parse int error: {0}")]
     ParseIntError(#[from] ParseIntError),
     #[error("parse float error: {0}")]
     ParseFloatError(#[from] ParseFloatError),
     #[error("internal error: {0}")]
-    Error(#[from] Error),
+    Error(#[from] Arc<Error>),
     #[error("error kind: {0}")]
     ErrorKind(String),
     #[error("try from slice error : {0}")]
