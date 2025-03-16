@@ -1,0 +1,443 @@
+// 词法分析 Lexer 定义
+// 目前支持的 SQL 语法
+
+use std::iter::Peekable;
+use std::str::Chars;
+use crate::utils::custom_error::{LegendDBError, LegendDBResult};
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Keyword {
+    Create,
+    Table,
+    Int,
+    Integer,
+    Boolean,
+    Bool,
+    String,
+    Text,
+    Varchar,
+    Float,
+    Double,
+    Select,
+    From,
+    Insert,
+    Update,
+    Delete,
+    Drop,
+    Into,
+    Values,
+    True,
+    False,
+    Default,
+    If,
+    Not,
+    Null,
+    Exists,
+    Primary,
+    Key,
+}
+
+impl Keyword {
+    pub fn from_str(ident: &str) -> Option<Self> {
+        match ident {
+            "CREATE" | "create" => Some(Keyword::Create),
+            "TABLE" | "table" => Some(Keyword::Table),
+            "INT" | "int" => Some(Keyword::Int),
+            "INTEGER" | "integer" => Some(Keyword::Integer),
+            "BOOLEAN" | "boolean" => Some(Keyword::Boolean),
+            "BOOL" | "bool" => Some(Keyword::Bool),
+            "STRING" | "string" => Some(Keyword::String),
+            "TEXT" | "text" => Some(Keyword::Text),
+            "VARCHAR" | "varchar" => Some(Keyword::Varchar),
+            "DOUBLE" | "double" => Some(Keyword::Double),
+            "FLOAT" | "float" => Some(Keyword::Float),
+            "SELECT" | "select" => Some(Keyword::Select),
+            "UPDATE" | "update" => Some(Keyword::Update),
+            "DELETE" | "delete" => Some(Keyword::Delete),
+            "DROP" | "drop" => Some(Keyword::Drop),
+            "FROM" | "from" => Some(Keyword::From),
+            "INSERT" | "insert" => Some(Keyword::Insert),
+            "INTO" | "into" => Some(Keyword::Into),
+            "VALUES" | "values" => Some(Keyword::Values),
+            "TRUE" | "true" => Some(Keyword::True),
+            "FALSE" | "false" => Some(Keyword::False),
+            "PRIMARY" | "primary" => Some(Keyword::Primary),
+            "KEY" | "key" => Some(Keyword::Key),
+            "NULL" | "null" => Some(Keyword::Null),
+            "DEFAULT" | "default" => Some(Keyword::Default),
+            "IF" | "if" => Some(Keyword::If),
+            "NOT" | "not" => Some(Keyword::Not),
+            "EXISTS" | "exists" => Some(Keyword::Exists),
+            _ => None,
+        }
+    }
+}
+#[derive(Debug)]
+#[derive(PartialEq)]
+pub enum Token {
+    // 关键字
+    Keyword(Keyword),
+    // 标识符
+    Identifier(String),
+    // 数字
+    Number(String),
+    // 字符串
+    String(String),
+    // 左括号
+    LeftParen,
+    // 右括号
+    RightParen,
+    // 左中括号
+    LeftBracket,
+    // 右中括号
+    RightBracket,
+    // 左大括号
+    LeftBrace,
+    // 右大括号
+    RightBrace,
+    // 点号
+    Dot,
+    // 逗号
+    Comma,
+    // 分号
+    Semicolon,
+    // 星号
+    Star,
+    // 加好
+    Plus,
+    // 减号
+    Minus,
+    // 乘号
+    Asterisk,
+    // 除号
+    Slash,
+    // 冒号
+    Colon,
+    // 等号
+    Equal,
+    // 大于号
+    GreaterThan,
+    // 小于号
+    LessThan,
+    // 等于号
+    DoubleEqual,
+    // 不等于号
+    NotEqual,
+    // 逻辑与
+    And,
+    // 逻辑或
+    Or,
+    // 空白
+    Whitespace,
+}
+// 1. Create Table
+// -------------------------------------
+// CREATE TABLE table_name (
+//     [ column_name data_type [ column_constraint [...] ] ]
+//     [, ... ]
+//    );
+//
+//    where data_type is:
+//     - BOOLEAN(BOOL): true | false
+//     - FLOAT(DOUBLE)
+//     - INTEGER(INT)
+//     - STRING(TEXT, VARCHAR)
+//
+//    where column_constraint is:
+//    [ NOT NULL | NULL | DEFAULT expr ]
+//
+// 2. Insert Into
+// -------------------------------------
+// INSERT INTO table_name
+// [ ( column_name [, ...] ) ]
+// values ( expr [, ...] );
+// 3. Select * From
+// -------------------------------------
+// SELECT * FROM table_name;
+pub struct Lexer<'a> {
+    iter: Peekable<Chars<'a>>
+}
+
+impl<'a> Iterator for Lexer<'a> {
+    type Item = LegendDBResult<Token>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.scan() {
+            Ok(Some(token)) => {Some(Ok(token))},
+            Ok(None) => {self.iter.peek().map(|c| Err(LegendDBError::NotSupported))},
+            Err(e) => {Some(Err(e))},
+        }
+    }
+}
+
+impl<'a> Lexer<'a> {
+
+    pub fn new(sql: &'a str) -> Lexer<'a> {
+        Lexer {
+            iter: sql.chars().peekable()
+        }
+    }
+
+    /// 消除空白字符
+    /// ex： select    *     from   table
+
+    fn skip_whitespace(&mut self) {
+        self.next_while(|c| c.is_whitespace());
+    }
+
+    fn next_if<F: Fn(char) -> bool>(&mut self, predicate: F) -> Option<char> {
+        self.iter.peek().filter(|&c| predicate(*c))?;
+        self.iter.next()
+    }
+
+    /// 判断当前字符是否满足条件，如果是空白字符则跳到下一个字符
+    fn next_while<F: Fn(char) -> bool>(&mut self, predicate: F) -> Option<String> {
+        let mut value = String::new();
+        while let Some(c) = self.next_if(&predicate){
+            value.push(c);
+        }
+        Some(value).filter(|s| !s.is_empty())
+    }
+    /// 判断当前字符是否满足条件，只有Token类型才跳转到下一个，并返回Token类型
+    fn next_if_token<F: Fn(char) -> Option<Token>>(&mut self, predicate: F) -> Option<Token> {
+        let token = self.iter.peek().and_then(|c| {predicate(*c)})?;
+        self.iter.next();
+        Some(token)
+    }
+
+    // 词法分析
+    pub fn scan(&mut self) -> LegendDBResult<Option<Token>> {
+        //清除字符串中空白部分
+        self.skip_whitespace();
+        // 根据第一个字符判断
+        match self.iter.peek() {
+            Some('\'') => self.scan_string(), // 扫描字符串
+            // is_ascii_digit 判断是否是数字
+            Some(c) if c.is_ascii_digit() => Ok(self.scan_number()), // 扫描数字
+            // is_alphabetic 判断是否是字母
+            Some(c) if c.is_alphabetic() => Ok(self.scan_identifier()), // 扫描ident 类型
+            Some(_) => Ok(self.scan_symbol()),
+            None => Ok(None),
+        }
+    }
+
+    /// 扫描字符串是否是单引号
+    fn scan_string(&mut self) -> LegendDBResult<Option<Token>> {
+        // 扫描字符串结束
+        if self.next_if(|c| c == '\'' || c == '\"').is_none() {
+            return Ok(None);
+        }
+        // 扫描字符串
+        let mut value = String::new();
+        // 扫描字符串
+        loop {
+            match self.iter.next() {
+                Some('\'') => break,
+                Some(c) => value.push(c),
+                None => return Err(LegendDBError::NotSupported)
+            }
+        }
+        Ok(Some(Token::String(value)))
+    }
+
+    /// 扫描数字
+    fn scan_number(&mut self) -> Option<Token> {
+        /// 先扫描一部分
+        let mut num = self.next_while(|c| c.is_ascii_digit())?;
+        // 如果中间存在小数点，说明是浮点数
+        if let Some(sep) = self.next_if(|c| c == '.') {
+            num.push(sep);
+            // 扫描小数点之后的部分
+            while let Some(c) = self.next_if(|c| c.is_ascii_digit()) {
+                num.push(c);
+            }
+        }
+        Some(Token::Number(num))
+    }
+
+    // 扫描identifier类型，比如表名，字段名
+    fn scan_identifier(&mut self) -> Option<Token> {
+        // 表明，字段名必须是字母或者下划线
+        let mut value = self.next_if(|c| c.is_ascii_alphanumeric() || c == '_')?.to_string();
+        // 扫描表名
+        while let Some(c) = self.next_if(|c| c.is_ascii_alphanumeric() || c == '_') {
+                value.push(c);
+            }
+        Some(Keyword::from_str(&value).map_or(Token::Identifier(value.to_lowercase()), Token::Keyword))
+    }
+
+    //扫描符号
+    fn scan_symbol(&mut self) -> Option<Token> {
+        self.next_if_token(|c| match c {
+            '*' => Some(Token::Star),
+            '+' => Some(Token::Plus),
+            '-' => Some(Token::Minus),
+            '/' => Some(Token::Slash),
+            ':' => Some(Token::Colon),
+            '=' => Some(Token::Equal),
+            '>' => Some(Token::GreaterThan),
+            '<' => Some(Token::LessThan),
+            '!' => Some(Token::NotEqual),
+            '&' => Some(Token::And),
+            '|' => Some(Token::Or),
+            '(' => Some(Token::LeftParen),
+            ')' => Some(Token::RightParen),
+            ',' => Some(Token::Comma),
+            ';' => Some(Token::Semicolon),
+            '.' => Some(Token::Dot),
+            '[' => Some(Token::LeftBracket),
+            ']' => Some(Token::RightBracket),
+            '{' => Some(Token::LeftBrace),
+            '}' => Some(Token::RightBrace),
+            _ => None,
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::vec;
+
+    use super::Lexer;
+    use crate::{
+        sql::parser::lexer::{Keyword, Token},
+    };
+    use crate::utils::custom_error::LegendDBResult;
+
+    #[test]
+    fn test_lexer_create_table() -> LegendDBResult<()> {
+        let tokens1 = Lexer::new(
+            "CREATE table tbl
+                (
+                    id1 int primary key,
+                    id2 integer
+                );
+                ",
+        )
+            .peekable()
+            .collect::<LegendDBResult<Vec<_>>>()?;
+
+        assert_eq!(
+            tokens1,
+            vec![
+                Token::Keyword(Keyword::Create),
+                Token::Keyword(Keyword::Table),
+                Token::Identifier("tbl".to_string()),
+                Token::LeftParen,
+                Token::Identifier("id1".to_string()),
+                Token::Keyword(Keyword::Int),
+                Token::Keyword(Keyword::Primary),
+                Token::Keyword(Keyword::Key),
+                Token::Comma,
+                Token::Identifier("id2".to_string()),
+                Token::Keyword(Keyword::Integer),
+                Token::RightParen,
+                Token::Semicolon
+            ]
+        );
+
+        let tokens2 = Lexer::new(
+            "CREATE table tbl
+                        (
+                            id1 int primary key,
+                            id2 integer,
+                            c1 bool null,
+                            c2 boolean not null,
+                            c3 float null,
+                            c4 double,
+                            c5 string,
+                            c6 text,
+                            c7 varchar default 'foo',
+                            c8 int default 100,
+                            c9 integer
+                        );
+                        ",
+        )
+            .peekable()
+            .collect::<LegendDBResult<Vec<_>>>()?;
+
+        assert!(tokens2.len() > 0);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_lexer_insert_into() -> LegendDBResult<()> {
+        let tokens1 = Lexer::new("insert into tbl values (1, 2, '3', true, false, 4.55);")
+            .peekable()
+            .collect::<LegendDBResult<Vec<_>>>()?;
+
+        assert_eq!(
+            tokens1,
+            vec![
+                Token::Keyword(Keyword::Insert),
+                Token::Keyword(Keyword::Into),
+                Token::Identifier("tbl".to_string()),
+                Token::Keyword(Keyword::Values),
+                Token::LeftParen,
+                Token::Number("1".to_string()),
+                Token::Comma,
+                Token::Number("2".to_string()),
+                Token::Comma,
+                Token::String("3".to_string()),
+                Token::Comma,
+                Token::Keyword(Keyword::True),
+                Token::Comma,
+                Token::Keyword(Keyword::False),
+                Token::Comma,
+                Token::Number("4.55".to_string()),
+                Token::RightParen,
+                Token::Semicolon,
+            ]
+        );
+
+        let tokens2 = Lexer::new("INSERT INTO       tbl (id, name, age) values (100, 'db', 10);")
+            .peekable()
+            .collect::<LegendDBResult<Vec<_>>>()?;
+
+        assert_eq!(
+            tokens2,
+            vec![
+                Token::Keyword(Keyword::Insert),
+                Token::Keyword(Keyword::Into),
+                Token::Identifier("tbl".to_string()),
+                Token::LeftParen,
+                Token::Identifier("id".to_string()),
+                Token::Comma,
+                Token::Identifier("name".to_string()),
+                Token::Comma,
+                Token::Identifier("age".to_string()),
+                Token::RightParen,
+                Token::Keyword(Keyword::Values),
+                Token::LeftParen,
+                Token::Number("100".to_string()),
+                Token::Comma,
+                Token::String("db".to_string()),
+                Token::Comma,
+                Token::Number("10".to_string()),
+                Token::RightParen,
+                Token::Semicolon,
+            ]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_lexer_select() -> LegendDBResult<()> {
+        let tokens1 = Lexer::new("select * from tbl;")
+            .peekable()
+            .collect::<LegendDBResult<Vec<_>>>()?;
+
+        assert_eq!(
+            tokens1,
+            vec![
+                Token::Keyword(Keyword::Select),
+                Token::Asterisk,
+                Token::Keyword(Keyword::From),
+                Token::Identifier("tbl".to_string()),
+                Token::Semicolon,
+            ]
+        );
+        Ok(())
+    }
+}
