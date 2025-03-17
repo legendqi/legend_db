@@ -4,10 +4,10 @@ use crate::sql::types::DataType;
 pub enum Statement {
     CreateTable { name: String, columns: Vec<Column> },
     CreateDatabase { name: String },
-    Insert { table_name: String, columns: Vec<String>, values: Vec<Vec<Expression>> },
+    Insert { table_name: String, columns: Option<Vec<String>>, values: Vec<Vec<Expression>> },
     Update { table_name: String, set: Vec<(String, Expression)>, where_clause: Option<Expression> },
     Delete { table_name: String, where_clause: Option<Expression> },
-    Select { table_name: String, columns: Vec<String>, where_clause: Option<Expression>},
+    Select { table_name: String, start: bool, columns: Option<Vec<String>>, where_clause: Option<Expression>},
     DropTable { table_name: String },
     DropDatabase { name: String },
 }

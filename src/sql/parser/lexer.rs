@@ -1,6 +1,7 @@
 // 词法分析 Lexer 定义
 // 目前支持的 SQL 语法
 
+use std::fmt::{Display, Formatter, Write};
 use std::iter::Peekable;
 use std::str::Chars;
 use crate::utils::custom_error::{LegendDBError, LegendDBResult};
@@ -21,8 +22,10 @@ pub enum Keyword {
     Double,
     Select,
     From,
+    Where,
     Insert,
     Update,
+    Set,
     Delete,
     Alter,
     Show,
@@ -57,11 +60,13 @@ impl Keyword {
             "FLOAT" => Some(Keyword::Float),
             "SELECT" => Some(Keyword::Select),
             "UPDATE" => Some(Keyword::Update),
+            "SET" => Some(Keyword::Set),
             "DELETE" => Some(Keyword::Delete),
             "ALTER" => Some(Keyword::Alter),
             "SHOW" => Some(Keyword::Show),
             "DROP" => Some(Keyword::Drop),
             "FROM" => Some(Keyword::From),
+            "WHERE" => Some(Keyword::Where),
             "INSERT" => Some(Keyword::Insert),
             "INTO" => Some(Keyword::Into),
             "VALUES" => Some(Keyword::Values),
@@ -76,6 +81,51 @@ impl Keyword {
             "EXISTS" => Some(Keyword::Exists),
             _ => None,
         }
+    }
+
+    pub fn to_str(&self) -> &str {
+        match self {
+            Keyword::Create => "CREATE",
+            Keyword::Database => "DATABASE",
+            Keyword::Table => "TABLE",
+            Keyword::Int => "INT",
+            Keyword::Integer => "INTEGER",
+            Keyword::Boolean => "BOOLEAN",
+            Keyword::Bool => "BOOL",
+            Keyword::String => "STRING",
+            Keyword::Text => "TEXT",
+            Keyword::Varchar => "VARCHAR",
+            Keyword::Float => "FLOAT",
+            Keyword::Double => "DOUBLE",
+            Keyword::Select => "SELECT",
+            Keyword::Update => "UPDATE",
+            Keyword::Set => "SET",
+            Keyword::Delete => "DELETE",
+            Keyword::Alter => "ALTER",
+            Keyword::Show => "SHOW",
+            Keyword::Drop => "DROP",
+            Keyword::From => "FROM",
+            Keyword::Where => "WHERE",
+            Keyword::Insert => "INSERT",
+            Keyword::Into => "INTO",
+            Keyword::Values => "VALUES",
+            Keyword::True => "TRUE",
+            Keyword::False => "FALSE",
+            Keyword::Primary => "PRIMARY",
+            Keyword::Key => "KEY",
+            Keyword::Null => "NULL",
+            Keyword::Default => "DEFAULT",
+            Keyword::If => "IF",
+            Keyword::Not => "NOT",
+            Keyword::Exists => "EXISTS",
+            _ => "unexcept key",
+        }
+    }
+}
+
+impl Display for Keyword {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.to_str())
     }
 }
 #[derive(Debug, Clone)]
@@ -135,6 +185,41 @@ pub enum Token {
     Or,
     // 空白
     Whitespace,
+}
+
+impl Display for Token {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Token::Keyword(keyword) => keyword.to_str(),
+            Token::Identifier(ident) => ident,
+            Token::Number(num) => num,
+            Token::String(string) => string,
+            Token::LeftParen => "(",
+            Token::RightParen => ")",
+            Token::LeftBracket => "[",
+            Token::RightBracket => "]",
+            Token::LeftBrace => "{",
+            Token::RightBrace => "}",
+            Token::Dot => ".",
+            Token::Comma => ",",
+            Token::Semicolon => ";",
+            Token::Star => "*",
+            Token::Plus => "+",
+            Token::Minus => "-",
+            Token::Asterisk => "*",
+            Token::Slash => "/",
+            Token::Colon => ":",
+            Token::Equal => "=",
+            Token::GreaterThan => ">",
+            Token::LessThan => "<",
+            Token::DoubleEqual => "==",
+            Token::NotEqual => "!=",
+            Token::And => "&&",
+            Token::Or => "||",
+            Token::Whitespace => " ",
+            _ => "unexcept token",
+        })
+    }
 }
 // 1. Create Table
 // -------------------------------------
@@ -248,7 +333,7 @@ impl<'a> Lexer<'a> {
 
     /// 扫描数字
     fn scan_number(&mut self) -> Option<Token> {
-        /// 先扫描一部分
+        // 先扫描一部分
         let mut num = self.next_while(|c| c.is_ascii_digit())?;
         // 如果中间存在小数点，说明是浮点数
         if let Some(sep) = self.next_if(|c| c == '.') {
