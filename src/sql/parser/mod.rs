@@ -54,9 +54,9 @@ impl<'a> Parser<'a> {
             Token::Keyword(Keyword::Drop) => match self.custom_next()? {
                 Token::Keyword(Keyword::Table) => self.parse_drop_table(),
                 Token::Keyword(Keyword::Database) => self.parse_drop_database(),
-                token => Err(LegendDBError::Parser("[Parser] Unexpected token".to_string()))
+                token => Err(LegendDBError::Parser(format!("[Parser] Unexpected token: {:?}", token)))
             },
-            token => Err(LegendDBError::Parser("[Parser] Unexpected token".to_string()))
+            token => Err(LegendDBError::Parser(format!("[Parser] Unexpected token: {:?}", token)))
         }
 
     }
