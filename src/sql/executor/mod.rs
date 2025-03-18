@@ -1,0 +1,41 @@
+mod schema;
+mod mutation;
+mod query;
+
+use crate::sql::executor::mutation::Insert;
+use crate::sql::executor::query::Scan;
+use crate::sql::executor::schema::CreateTable;
+use crate::sql::plan::{Node, Plan};
+use crate::sql::types::Row;
+use crate::utils::custom_error::LegendDBResult;
+
+// 抽象执行器定义
+pub trait Executor {
+    fn execute(&self) -> LegendDBResult<ResultSet>;
+}
+
+impl dyn Executor {
+    pub fn build(node: Node) -> Box<dyn Executor> {
+        match node {
+            Node::CreateTable {schema } => CreateTable::new(schema),
+            Node::Insert {table_name, columns, values} => Insert::new(table_name, columns, values),
+            Node::Scan {table_name} => Scan::new(table_name),
+            _ => panic!("Invalid node type"),
+        }
+    }
+}
+
+// 查询结果集
+#[derive(Debug)]
+pub enum ResultSet {
+    CreateTable {
+        table_name: String
+    },
+    Insert {
+        count: usize
+    },
+    Scan {
+        columns: Vec<String>,
+        row: Vec<Row>
+    }
+}
