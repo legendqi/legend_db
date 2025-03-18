@@ -5,7 +5,7 @@ mod query;
 use crate::sql::executor::mutation::Insert;
 use crate::sql::executor::query::Scan;
 use crate::sql::executor::schema::CreateTable;
-use crate::sql::plan::{Node, Plan};
+use crate::sql::plan::Node;
 use crate::sql::types::Row;
 use crate::utils::custom_error::LegendDBResult;
 
