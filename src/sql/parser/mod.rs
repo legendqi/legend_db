@@ -77,30 +77,28 @@ impl<'a> Parser<'a> {
     fn parse_select(&mut self) -> LegendDBResult<Statement> {
         // 解析select
         self.next_expect(Token::Keyword(Keyword::Select))?; // select
-        let mut star = false;
-        let mut cols = Vec::new();
-         // *
-        if self.next_expect(Token::Asterisk).is_ok() {
-            star = true;
-        } else {
-            loop {
-                cols.push(self.next_ident()?);
-                match self.custom_next()? { 
-                    Token::Keyword(Keyword::From) => break,
-                    Token::Comma => {}
-                    token => return Err(LegendDBError::Parser(format!("[Parser] Unexpected token: {:?}", token)))
-                }
-            }
-        }
-        if star {
-            self.next_expect(Token::Keyword(Keyword::From))?; // from
-        }
+        self.next_expect(Token::Star)?;
+        self.next_expect(Token::Keyword(Keyword::From))?;
+        // let mut cols = Vec::new();
+        //  // *
+        // if self.next_expect(Token::Asterisk).is_ok() {
+        //     star = true;
+        // } else {
+        //     loop {
+        //         cols.push(self.next_ident()?);
+        //         match self.custom_next()? { 
+        //             Token::Keyword(Keyword::From) => break,
+        //             Token::Comma => {}
+        //             token => return Err(LegendDBError::Parser(format!("[Parser] Unexpected token: {:?}", token)))
+        //         }
+        //     }
+        // }
+        // if star {
+        //     self.next_expect(Token::Keyword(Keyword::From))?; // from
+        // }
         let table_name = self.next_ident()?;
         Ok(Select {
             table_name,
-            start: true,
-            columns: Some(cols),
-            where_clause: None,
         })
     }
 
@@ -439,9 +437,6 @@ mod tests {
             stmt,
             Statement::Select  {
                 table_name: "tbl1".to_string(),
-                start: true,
-                columns: None,
-                where_clause: None,
             }
         );
         Ok(())

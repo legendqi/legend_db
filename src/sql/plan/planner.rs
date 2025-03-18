@@ -1,5 +1,7 @@
-use crate::sql::parser::ast::Statement;
+use crate::sql::parser::ast::{Statement};
 use crate::sql::plan::{Node, Plan};
+use crate::sql::schema::{Column, Table};
+use crate::sql::types::Value;
 
 pub struct Planner;
 
@@ -15,16 +17,55 @@ impl Planner {
         match stmt {
             Statement::CreateTable { name, columns } => {
                 Node::CreateTable {
-                    schema
-                }
+                    schema: Table {
+                        name,
+                        columns: columns.into_iter().map(|c| {
+                            let nullable = c.nullable.unwrap_or(true);
+                            let default = match c.default {
+                                Some(v) => Some(Value::from_expression(v)),
+                                None if nullable => Some(Value::Null),
+                                None => None,
+                            };
+                            Column {
+                                name: c.name,
+                                data_type: c.data_type,
+                                nullable,
+                                default_value: None,
+                            }
+                        }).collect(),
+                    }
+                    }
             },
             Statement::Insert { table_name, columns, values } => {
                 Node::Insert {
                     table_name,
-                    columns: columns.unwrap(),
+                    columns: columns.unwrap_or_default(),
                     values
                 }
             },
+            Statement::Select {table_name, .. } => {
+                Node::Scan {
+                    table_name,
+                }
+            }
+            Statement::Delete { table_name, .. } => {
+                Node::Delete {
+                    table_name,
+                }
+            },
+            Statement::Update { table_name, set, where_clause } => {
+                Node::Update {
+                    table_name,
+                    set,
+                    where_clause
+                }
+            },
+            Statement::DropTable { table_name, .. } => {
+                Node::Drop {
+                    table_name,
+                }
+            },
+            _ => panic!("Unsupported statement"),
         }
     }
 }

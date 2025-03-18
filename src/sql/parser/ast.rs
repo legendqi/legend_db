@@ -7,7 +7,7 @@ pub enum Statement {
     Insert { table_name: String, columns: Option<Vec<String>>, values: Vec<Vec<Expression>> },
     Update { table_name: String, set: Vec<(String, Expression)>, where_clause: Option<Expression> },
     Delete { table_name: String, where_clause: Option<Expression> },
-    Select { table_name: String, start: bool, columns: Option<Vec<String>>, where_clause: Option<Expression>},
+    Select { table_name: String },
     DropTable { table_name: String },
     DropDatabase { name: String },
 }
@@ -38,7 +38,7 @@ impl From<Consts> for Expression {
 pub enum Consts {
     Null,
     String(String),
-    Integer(i32),
-    Float(f32),
+    Integer(i64),
+    Float(f64),
     Boolean(bool),
 }
