@@ -6,8 +6,8 @@ use crate::sql::parser::lexer::{Keyword, Lexer, Token};
 use crate::sql::types::DataType;
 use crate::utils::custom_error::{LegendDBError, LegendDBResult};
 
-mod lexer;
-mod ast;
+pub mod lexer;
+pub mod ast;
 
 pub struct Parser<'a> {
     lexer: Peekable<Lexer<'a>>
