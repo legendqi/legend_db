@@ -1,3 +1,4 @@
+use crate::sql::engine::Transaction;
 use crate::sql::executor::{Executor, ResultSet};
 use crate::sql::schema::Table;
 use crate::utils::custom_error::LegendDBResult;
@@ -15,8 +16,8 @@ impl CreateTable {
     }
 }
 
-impl Executor for CreateTable {
-    fn execute(&self) -> LegendDBResult<ResultSet> {
+impl<T: Transaction> Executor<T> for CreateTable {
+    fn execute(&self, txn: &mut T) -> LegendDBResult<ResultSet> {
         todo!()
     }
 }

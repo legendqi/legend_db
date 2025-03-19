@@ -2,6 +2,7 @@ mod schema;
 mod mutation;
 mod query;
 
+use crate::sql::engine::Transaction;
 use crate::sql::executor::mutation::Insert;
 use crate::sql::executor::query::Scan;
 use crate::sql::executor::schema::CreateTable;
@@ -10,12 +11,12 @@ use crate::sql::types::Row;
 use crate::utils::custom_error::LegendDBResult;
 
 // 抽象执行器定义
-pub trait Executor {
-    fn execute(&self) -> LegendDBResult<ResultSet>;
+pub trait Executor<T: Transaction> {
+    fn execute(&self, txn: &mut T) -> LegendDBResult<ResultSet>;
 }
 
-impl dyn Executor {
-    pub fn build(node: Node) -> Box<dyn Executor> {
+impl<T: Transaction> dyn Executor<T> {
+    pub fn build(node: Node) -> Box<dyn Executor<T>> {
         match node {
             Node::CreateTable {schema } => CreateTable::new(schema),
             Node::Insert {table_name, columns, values} => Insert::new(table_name, columns, values),

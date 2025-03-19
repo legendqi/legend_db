@@ -2,4 +2,6 @@ pub mod parser;
 pub mod types;
 pub mod plan;
 pub mod schema;
-mod executor;
+pub mod executor;
+pub mod engine;
+pub mod storage;

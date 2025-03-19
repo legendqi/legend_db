@@ -1,3 +1,4 @@
+use crate::sql::engine::Transaction;
 use crate::sql::executor::{Executor, ResultSet};
 use crate::utils::custom_error::LegendDBResult;
 
@@ -13,8 +14,8 @@ impl Scan {
     }
 }
 
-impl Executor for Scan {
-    fn execute(&self) -> LegendDBResult<ResultSet> {
+impl<T: Transaction> Executor<T> for Scan {
+    fn execute(&self, txn: &mut T) -> LegendDBResult<ResultSet> {
        todo!()
     }
 }

@@ -1,9 +1,12 @@
 mod planner;
 
+use crate::sql::engine::Transaction;
+use crate::sql::executor::{Executor, ResultSet};
 use crate::sql::parser::ast::{Expression, Statement};
 use crate::sql::plan::planner::Planner;
 use crate::sql::schema::Table;
 use crate::sql::types::Value;
+use crate::utils::custom_error::LegendDBResult;
 
 #[derive(Debug, PartialEq)]
 pub enum Node {
@@ -39,8 +42,12 @@ pub struct Plan(pub Node);
 
 
 impl Plan {
-    pub fn build(stmt: Statement) -> Self {
+    pub fn build(stmt: Statement,) -> Self {
         Planner::new().build(stmt)
+    }
+
+    pub fn execute<T: Transaction>(self, txn: &mut T) -> LegendDBResult<ResultSet> {
+        <dyn Executor<T>>::build(self.0).execute(txn)
     }
 }
 

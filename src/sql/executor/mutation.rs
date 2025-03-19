@@ -1,3 +1,4 @@
+use crate::sql::engine::Transaction;
 use crate::sql::executor::{Executor, ResultSet};
 use crate::sql::parser::ast::Expression;
 use crate::utils::custom_error::LegendDBResult;
@@ -18,8 +19,8 @@ impl Insert {
     }
 }
 
-impl Executor for Insert {
-    fn execute(&self) -> LegendDBResult<ResultSet> {
+impl<T: Transaction> Executor<T> for Insert {
+    fn execute(&self, txn: &mut T) -> LegendDBResult<ResultSet> {
         todo!()
     }
 }
