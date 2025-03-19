@@ -1,3 +1,6 @@
+mod engine;
+mod memory;
+
 use crate::utils::custom_error::LegendDBResult;
 
 #[derive(Debug, Clone)]
