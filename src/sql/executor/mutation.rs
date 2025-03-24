@@ -20,7 +20,7 @@ impl Insert {
 }
 
 impl<T: Transaction> Executor<T> for Insert {
-    fn execute(&self, txn: &mut T) -> LegendDBResult<ResultSet> {
+    fn execute(self: Box<Self>, txn: &mut T) -> LegendDBResult<ResultSet> {
         todo!()
     }
 }

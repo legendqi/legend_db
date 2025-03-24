@@ -1,6 +1,6 @@
 use std::io::Error;
 use std::num::{ParseFloatError, ParseIntError};
-use std::sync::Arc;
+use std::sync::{Arc, PoisonError};
 
 //自定义错误类型
 pub type LegendDBResult<T> = Result<T, LegendDBError>;
@@ -20,5 +20,15 @@ pub enum LegendDBError {
     #[error("parse error: {0}")]
     Parser(String),
     #[error("not supported")]
-    NotSupported
+    NotSupported,
+    #[error("internal error {0}")]
+    Internal(String),
+    #[error("table exists: {0}")]
+    TableExist(String),
+}
+
+impl<E> From<PoisonError<E>> for LegendDBError {
+    fn from(value: PoisonError<E>) -> Self {
+        LegendDBError::Internal(value.to_string())
+    }
 }

@@ -1,6 +1,7 @@
+use rkyv::{Archive, Deserialize, Serialize};
 use crate::sql::parser::ast::{Consts, Expression};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
 pub enum DataType {
     Boolean,
     Integer,
@@ -10,13 +11,14 @@ pub enum DataType {
     Time,
     DateTime,
     Binary,
-    Array(Box<DataType>),
-    Map(Box<DataType>, Box<DataType>),
-    Union(Vec<DataType>),
+    // Array(Box<DataType>),
+    // Map(Box<DataType>, Box<DataType>),
+    // Union(Vec<DataType>),
     Null,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
+// #[derive(ArchiveWith)]
 pub enum Value {
     Null,
     Boolean(bool),
@@ -27,9 +29,12 @@ pub enum Value {
     Time(String),
     DateTime(String),
     Binary(Vec<u8>),
-    Array(Vec<Value>),
-    Map(Vec<(Value, Value)>),
-    Union(Vec<Value>),
+    // #[archive_with(from(Value))]
+    // Array(Vec<Value>),
+    // #[archive_with(from(Value))]
+    // Map(Vec<(Value, Value)>),
+    // #[archive_with(from(Value))]
+    // Union(Vec<Value>),
     Json(String),
     Jsonb(String),
 }

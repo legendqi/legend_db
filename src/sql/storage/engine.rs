@@ -1,5 +1,4 @@
 use std::ops::{Bound, RangeBounds};
-use rand::random;
 use crate::utils::custom_error::LegendDBResult;
 
 //抽象存储引擎接口定义，接入不同的存储引擎，目前只支持内存和简单的磁盘KV存储
@@ -37,7 +36,7 @@ pub trait EngineIterator: DoubleEndedIterator<Item = LegendDBResult<(Vec<u8>, Ve
 
 mod tests {
     use super::Engine;
-    use std::{ops::Bound, path::PathBuf};
+    use std::{ops::Bound};
     use crate::sql::storage::memory::MemoryEngine;
     use crate::utils::custom_error::LegendDBResult;
 

@@ -12,7 +12,7 @@ use crate::utils::custom_error::LegendDBResult;
 
 // 抽象执行器定义
 pub trait Executor<T: Transaction> {
-    fn execute(&self, txn: &mut T) -> LegendDBResult<ResultSet>;
+    fn execute(self: Box<Self<>>, txn: &mut T) -> LegendDBResult<ResultSet>;
 }
 
 impl<T: Transaction> dyn Executor<T> {

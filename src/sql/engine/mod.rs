@@ -37,7 +37,7 @@ pub trait Transaction {
     fn drop_database(&self, name: &str) -> LegendDBResult<()>;
 
     // 创建表
-    fn create_table(&mut self, table: String, row: Row) -> LegendDBResult<()>;
+    fn create_table(&mut self, table: Table) -> LegendDBResult<()>;
 
     // 删除表
     fn drop_table(&self, name: &str) -> LegendDBResult<()>;
