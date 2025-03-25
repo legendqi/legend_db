@@ -1,8 +1,7 @@
-use std::fmt::Error;
-use std::io::Error;
-use rkyv::{to_bytes, Archive, Archived, Deserialize, Serialize, SerializeUnsized};
+use std::convert::Infallible;
+use rkyv::{access, deserialize, from_bytes, to_bytes, Archive, Archived, Deserialize, Serialize, SerializeUnsized};
 use rkyv::api::test::to_archived;
-use rkyv::util::AlignedVec;
+use rkyv::rancor::Error as RancorError;
 use crate::sql::engine::{Engine, Session, Transaction};
 use crate::sql::schema::Table;
 use crate::sql::storage;
@@ -79,8 +78,8 @@ impl<E: StorageEngine> Transaction for KVTransaction<E> {
             return Err(LegendDBError::Internal(format!("table {} has no columns", table.name)));
         }
         let key = TransactionKey::TableName(table.name.clone());
-        
-        self.txn.set(to_bytes(&key)?.into_vec(), to_bytes(&table)?.into_vec())?;
+
+        self.txn.set(to_bytes::<RancorError>(&key)?.into_vec(), to_bytes::<RancorError>(&table)?.into_vec())?;
         Ok(())
     }
 
@@ -98,15 +97,15 @@ impl<E: StorageEngine> Transaction for KVTransaction<E> {
 
     fn get_table(&self, table: String) -> LegendDBResult<Option<Table>> {
         let key = TransactionKey::TableName(table);
-        if let Some(value) = self.txn.get(to_bytes(&key)?.into_vec())? {
-            let table:&Archived<Table>  = to_archived::<Table>(&value);
-            Ok(Some(table))
-        }
-        todo!()
+        let key_bytes: Vec<u8> = to_bytes::<RancorError>(&key)?.into_vec();
+        let value = self.txn.get(key_bytes)?;
+        Ok(value.map(|value| {
+            deserialize::<Table, RancorError>(&value)
+        }).transpose()?)
     }
 }
 
-#[derive(Debug, Archive, Serialize, Deserialize)]
+#[derive(Debug, Clone, Archive, Serialize, Deserialize)]
 pub enum TransactionKey {
     TableName(String),
     RowKey(String, String),
