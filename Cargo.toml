@@ -6,8 +6,6 @@ edition = "2024"
 [dependencies]
 thiserror = "2.0.3"
 rkyv = {version = "0.8.8", features = ["alloc", "std"]}
-rkyv-with = "0.1.2"
-
 
 #[workspace]
 #members = ["sql"]

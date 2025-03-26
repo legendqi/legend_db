@@ -1,6 +1,6 @@
 use std::convert::Infallible;
 use rkyv::{access, deserialize, from_bytes, to_bytes, Archive, Archived, Deserialize, Serialize, SerializeUnsized};
-use rkyv::api::test::to_archived;
+use rkyv::api::test::{to_archived, to_archived_from_bytes};
 use rkyv::rancor::Error as RancorError;
 use crate::sql::engine::{Engine, Session, Transaction};
 use crate::sql::schema::Table;
@@ -100,7 +100,7 @@ impl<E: StorageEngine> Transaction for KVTransaction<E> {
         let key_bytes: Vec<u8> = to_bytes::<RancorError>(&key)?.into_vec();
         let value = self.txn.get(key_bytes)?;
         Ok(value.map(|value| {
-            deserialize::<Table, RancorError>(&value)
+            from_bytes(&value)
         }).transpose()?)
     }
 }
