@@ -1,15 +1,11 @@
-use std::convert::Infallible;
-use rkyv::{access, deserialize, from_bytes, to_bytes, Archive, Archived, Deserialize, Serialize, SerializeUnsized};
-use rkyv::api::test::{to_archived, to_archived_from_bytes};
-use rkyv::rancor::Error as RancorError;
+use bincode::{config, Decode, Encode};
 use crate::sql::engine::{Engine, Session, Transaction};
 use crate::sql::schema::Table;
 use crate::sql::storage;
 use crate::sql::storage::engine::Engine as StorageEngine;
-use crate::sql::storage::mvcc::MvccTransaction;
-use crate::sql::types::Row;
+use crate::sql::storage::mvcc::{MvccTransaction};
+use crate::sql::types::{Row, Value};
 use crate::utils::custom_error::{LegendDBError, LegendDBResult};
-
 // KV引擎定义
 #[derive(Debug)]
 pub struct KVEngine<E: StorageEngine> {
@@ -25,6 +21,14 @@ impl<E: StorageEngine> Clone for KVEngine<E>  {
     }
 }
 
+impl<E: StorageEngine> KVEngine<E> {
+    pub fn new(engine: E) -> Self {
+        Self {
+            kv: storage::mvcc::Mvcc::new(engine),
+        }
+    }
+}
+
 
 impl<E: StorageEngine> Engine for KVEngine<E> {
     type Transaction = KVTransaction<E>;
@@ -34,7 +38,10 @@ impl<E: StorageEngine> Engine for KVEngine<E> {
     }
 
     fn session(&self) -> LegendDBResult<Session<Self>> {
-        todo!()
+        Ok(Session {
+            engine: self.clone(),
+            transaction: self.begin()?,
+        })
     }
 
 }
@@ -78,8 +85,16 @@ impl<E: StorageEngine> Transaction for KVTransaction<E> {
             return Err(LegendDBError::Internal(format!("table {} has no columns", table.name)));
         }
         let key = TransactionKey::TableName(table.name.clone());
-
-        self.txn.set(to_bytes::<RancorError>(&key)?.into_vec(), to_bytes::<RancorError>(&table)?.into_vec())?;
+        // 简单序列化
+        // let key_bytes: Vec<u8> = to_bytes::<RancorError>(&key)?.into_vec();
+        // 高性能序列化
+        // let mut arena = Arena::new();
+        // let key_result = to_bytes_with_alloc::<_, RancorError>(&key, arena.acquire())?.into_vec();
+        // let table_result = to_bytes_with_alloc::<_, RancorError>(&table, arena.acquire())?.into_vec();
+        let config = config::standard();
+        let key_result = bincode::encode_to_vec(key, config)?;
+        let table_result = bincode::encode_to_vec(table, config)?;
+        self.txn.set(key_result, table_result)?;
         Ok(())
     }
 
@@ -88,25 +103,78 @@ impl<E: StorageEngine> Transaction for KVTransaction<E> {
     }
 
     fn create_row(&mut self, table: String, row: Row) -> LegendDBResult<()> {
-        todo!()
+        // 暂时未实现主键和索引， 暂时以第一行作为主键, 一行数据的唯一标识
+        // 存放数据
+        let id = TransactionKey::RowKey(table, row[0].clone());
+        let config = config::standard();
+        let key = bincode::encode_to_vec(id, config)?;
+        let value = bincode::encode_to_vec(row, config)?;
+        self.txn.set(key, value)?;
+        Ok(())
     }
 
     fn scan_table(&self, table: String) -> LegendDBResult<Vec<Row>> {
-        todo!()
+        let prefix = KeyPrefix::Row(table.clone());
+        let config = config::standard();
+        let prefix_key = bincode::encode_to_vec(&prefix, config)?;
+        let results = self.txn.scan_prefix(prefix_key)?;
+        let mut rows = Vec::new();
+        for result in results {
+            let (row, _) = bincode::decode_from_slice(&result.value, config)?;
+            rows.push(row);
+        }
+        Ok(rows)
     }
 
     fn get_table(&self, table: String) -> LegendDBResult<Option<Table>> {
+        // let bytes = to_bytes::<Error>(&value).unwrap();
+        // let deserialized = from_bytes::<Example, Error>(&bytes).unwrap()
         let key = TransactionKey::TableName(table);
-        let key_bytes: Vec<u8> = to_bytes::<RancorError>(&key)?.into_vec();
+        let config = config::standard();
+        // let mut arena = Arena::new();
+        // let key_bytes = to_bytes_with_alloc::<_, RancorError>(&key, arena.acquire())?.into_vec();
+        let key_bytes = bincode::encode_to_vec(key, config)?;
         let value = self.txn.get(key_bytes)?;
-        Ok(value.map(|value| {
-            from_bytes(&value)
+        Ok(value.map(|v| {
+            //Result<&ArchivedTable, RancorError>
+            // let table_archived: &ArchivedTable = access::<ArchivedTable, RancorError>(&v)?;
+            // deserialize::<Table, RancorError>(table_archived)
+            bincode::decode_from_slice(&v, config).map(|(table, _)| table)
         }).transpose()?)
     }
 }
 
-#[derive(Debug, Clone, Archive, Serialize, Deserialize)]
+#[derive(Debug, Clone, Encode, Decode)]
 pub enum TransactionKey {
     TableName(String),
-    RowKey(String, String),
+    RowKey(String, Value),
+}
+
+#[derive(Debug, Clone, Encode, Decode)]
+pub enum KeyPrefix {
+    Table,
+    Row(String)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::sql::engine::Engine;
+    use crate::sql::engine::kv::KVEngine;
+    use crate::sql::storage::memory::MemoryEngine;
+    use crate::utils::custom_error::LegendDBResult;
+
+    #[test]
+    fn test_create_table() -> LegendDBResult<()> {
+        let kvengine = KVEngine::new(MemoryEngine::new());
+        let mut s = kvengine.session()?;
+
+        s.execute("create table t1 (a int, b text default 'vv', c integer default 100);")?;
+        s.execute("insert into t1 values(1, 'a', 1);")?;
+        s.execute("insert into t1 values(2, 'b');")?;
+        s.execute("insert into t1(c, a) values(200, 3);")?;
+
+        s.execute("select * from t1;")?;
+
+        Ok(())
+    }
 }

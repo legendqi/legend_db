@@ -1,4 +1,5 @@
 use std::sync::{Arc, Mutex};
+use serde::{Deserialize, Serialize};
 use crate::sql::storage::engine::Engine;
 use crate::utils::custom_error::LegendDBResult;
 
@@ -72,6 +73,7 @@ impl<E: Engine> MvccTransaction<E> {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ScanResult {
     pub key: Vec<u8>,
     pub value: Vec<u8>,

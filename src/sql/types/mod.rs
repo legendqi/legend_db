@@ -1,7 +1,8 @@
-use rkyv::{Archive, Deserialize, Serialize};
+use bincode::{Decode, Encode};
+use serde::{Deserialize, Serialize};
 use crate::sql::parser::ast::{Consts, Expression};
 
-#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Encode, Decode, Debug, PartialEq)]
 pub enum DataType {
     Boolean,
     Integer,
@@ -11,14 +12,13 @@ pub enum DataType {
     Time,
     DateTime,
     Binary,
-    // Array(Box<DataType>),
-    // Map(Box<DataType>, Box<DataType>),
-    // Union(Vec<DataType>),
+    Array(Box<DataType>),
+    Map(Box<DataType>, Box<DataType>),
+    Union(Vec<DataType>),
     Null,
 }
 
-#[derive(Debug, Clone, PartialEq, Archive, Serialize, Deserialize)]
-// #[derive(ArchiveWith)]
+#[derive(Serialize, Deserialize, Encode, Decode,Debug, Clone, PartialEq)]
 pub enum Value {
     Null,
     Boolean(bool),
@@ -29,12 +29,9 @@ pub enum Value {
     Time(String),
     DateTime(String),
     Binary(Vec<u8>),
-    // #[archive_with(from(Value))]
-    // Array(Vec<Value>),
-    // #[archive_with(from(Value))]
-    // Map(Vec<(Value, Value)>),
-    // #[archive_with(from(Value))]
-    // Union(Vec<Value>),
+    Array(Vec<Value>),
+    Map(Vec<(Value, Value)>),
+    Union(Vec<Value>),
     Json(String),
     Jsonb(String),
 }
@@ -48,6 +45,24 @@ impl Value {
             Expression::Consts(Consts::Integer(i)) => Self::Integer(i),
             Expression::Consts(Consts::Float(f)) => Self::Float(f),
             Expression::Consts(Consts::String(s)) => Self::String(s),
+        }
+    }
+    
+    // 获取数据类型
+    pub fn get_type(&self) -> DataType {
+        match self {
+            Value::Null => DataType::Null,
+            Value::Boolean(_) => DataType::Boolean,
+            Value::Integer(_) => DataType::Integer,
+            Value::Float(_) => DataType::Float,
+            Value::String(_) => DataType::String,
+            Value::Date(_) => DataType::Date,
+            Value::Time(_) => DataType::Time,
+            Value::DateTime(_) => DataType::DateTime,
+            Value::Binary(_) => DataType::Binary,
+            Value::Json(_) => DataType::String,
+            Value::Jsonb(_) => DataType::String,
+            _ => panic!("Invalid value type"),
         }
     }
     

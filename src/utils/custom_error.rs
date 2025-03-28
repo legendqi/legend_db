@@ -1,12 +1,12 @@
 use std::io::Error;
 use std::num::{ParseFloatError, ParseIntError};
 use std::sync::{Arc, PoisonError};
-use rkyv::rancor::Error as RancorError;
-
+use bincode::error::DecodeError;
+use bincode::error::EncodeError;
 //自定义错误类型
 pub type LegendDBResult<T> = Result<T, LegendDBError>;
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, Clone, thiserror::Error)]
 pub enum LegendDBError {
     #[error("parse int error: {0}")]
     ParseIntError(#[from] ParseIntError),
@@ -27,7 +27,24 @@ pub enum LegendDBError {
     #[error("table exists: {0}")]
     TableExist(String),
     #[error("table not exists: {0}")]
-    RkyvError(#[from] RancorError)
+    TableNotFound(String),
+    #[error("decode error: {0}")]
+    DecodeError(String),
+    #[error("encode error: {0}")]
+    EncodeError(String),
+
+}
+
+impl From<DecodeError> for LegendDBError {
+    fn from(value: DecodeError) -> Self {
+        LegendDBError::DecodeError(value.to_string())
+    }
+}
+
+impl From<EncodeError> for LegendDBError {
+    fn from(value: EncodeError) -> Self {
+        LegendDBError::EncodeError(value.to_string())
+    }
 }
 
 impl<E> From<PoisonError<E>> for LegendDBError {
