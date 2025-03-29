@@ -1,6 +1,5 @@
 use std::iter::Peekable;
 use crate::sql::parser::ast::{Column, Consts, Expression, Statement};
-use crate::sql::parser::ast::Consts::Null;
 use crate::sql::parser::ast::Statement::Select;
 use crate::sql::parser::lexer::{Keyword, Lexer, Token};
 use crate::sql::types::DataType;

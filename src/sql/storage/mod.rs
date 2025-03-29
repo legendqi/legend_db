@@ -1,6 +1,7 @@
 pub mod engine;
 pub mod memory;
 pub mod mvcc;
+mod disk;
 
 use crate::utils::custom_error::LegendDBResult;
 

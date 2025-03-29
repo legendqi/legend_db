@@ -26,7 +26,7 @@ impl Engine for MemoryEngine {
         Ok(())
     }
 
-    fn get(&self, key: Vec<u8>) -> LegendDBResult<Option<Vec<u8>>> {
+    fn get(&mut self, key: Vec<u8>) -> LegendDBResult<Option<Vec<u8>>> {
         Ok(self.data.get(&key).cloned())
     }
 

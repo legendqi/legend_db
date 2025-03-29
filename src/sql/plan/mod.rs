@@ -5,7 +5,6 @@ use crate::sql::executor::{Executor, ResultSet};
 use crate::sql::parser::ast::{Expression, Statement};
 use crate::sql::plan::planner::Planner;
 use crate::sql::schema::Table;
-use crate::sql::types::Value;
 use crate::utils::custom_error::LegendDBResult;
 
 #[derive(Debug, PartialEq)]

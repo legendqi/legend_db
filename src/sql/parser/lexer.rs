@@ -1,7 +1,7 @@
 // 词法分析 Lexer 定义
 // 目前支持的 SQL 语法
 
-use std::fmt::{Display, Formatter, Write};
+use std::fmt::{Display, Formatter};
 use std::iter::Peekable;
 use std::str::Chars;
 use crate::utils::custom_error::{LegendDBError, LegendDBResult};
@@ -118,7 +118,6 @@ impl Keyword {
             Keyword::If => "IF",
             Keyword::Not => "NOT",
             Keyword::Exists => "EXISTS",
-            _ => "unexcept key",
         }
     }
 }
@@ -217,7 +216,6 @@ impl Display for Token {
             Token::And => "&&",
             Token::Or => "||",
             Token::Whitespace => " ",
-            _ => "unexcept token",
         })
     }
 }
@@ -255,7 +253,7 @@ impl<'a> Iterator for Lexer<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         match self.scan() {
             Ok(Some(token)) => {Some(Ok(token))},
-            Ok(None) => {self.iter.peek().map(|c| Err(LegendDBError::NotSupported))},
+            Ok(None) => {self.iter.peek().map(|_| Err(LegendDBError::NotSupported))},
             Err(e) => {Some(Err(e))},
         }
     }

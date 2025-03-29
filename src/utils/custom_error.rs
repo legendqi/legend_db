@@ -32,7 +32,6 @@ pub enum LegendDBError {
     DecodeError(String),
     #[error("encode error: {0}")]
     EncodeError(String),
-
 }
 
 impl From<DecodeError> for LegendDBError {
@@ -44,6 +43,12 @@ impl From<DecodeError> for LegendDBError {
 impl From<EncodeError> for LegendDBError {
     fn from(value: EncodeError) -> Self {
         LegendDBError::EncodeError(value.to_string())
+    }
+}
+
+impl From<Error> for LegendDBError {
+    fn from(value: Error) -> Self {
+        LegendDBError::Error(Arc::new(value))
     }
 }
 

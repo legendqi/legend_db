@@ -21,7 +21,7 @@ impl Planner {
                         name,
                         columns: columns.into_iter().map(|c| {
                             let nullable = c.nullable.unwrap_or(true);
-                            let default = match c.default {
+                            match c.default {
                                 Some(v) => Some(Value::from_expression(v)),
                                 None if nullable => Some(Value::Null),
                                 None => None,

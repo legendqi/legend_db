@@ -9,7 +9,7 @@ pub trait Engine {
     // 设置key/value
     fn set(&mut self, key: Vec<u8>, value: Vec<u8>) -> LegendDBResult<()>;
 
-    fn get(&self, key: Vec<u8>) ->LegendDBResult<Option<Vec<u8>>>;
+    fn get(&mut self, key: Vec<u8>) ->LegendDBResult<Option<Vec<u8>>>;
 
     // 删除key,如果key不存在的话则忽略
     fn delete(&mut self, key: Vec<u8>) -> LegendDBResult<()>;

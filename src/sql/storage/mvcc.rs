@@ -55,7 +55,7 @@ impl<E: Engine> MvccTransaction<E> {
     }
     
     pub(crate) fn get(&self, key: Vec<u8>) -> LegendDBResult<Option<Vec<u8>>> {
-        let engine = self.engine.lock()?;
+        let mut engine = self.engine.lock()?;
         engine.get(key)
     }
     
