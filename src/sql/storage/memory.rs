@@ -36,7 +36,7 @@ impl Engine for MemoryEngine {
     }
 
     // <'_> 是Rust中用于简化生命周期标注的语法，表示让编译器自动推断生命周期，避免显式命名的繁琐
-    fn scan(&self, range: impl RangeBounds<Vec<u8>>) -> Self::EngineIterator<'_> {
+    fn scan(&mut self, range: impl RangeBounds<Vec<u8>>) -> Self::EngineIterator<'_> {
         MemoryEngineIterator {
             inner: self.data.range(range),
         }

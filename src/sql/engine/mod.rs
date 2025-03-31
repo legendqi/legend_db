@@ -46,7 +46,7 @@ pub trait Transaction {
     fn create_row(&mut self, table: String, row: Row) -> LegendDBResult<()>;
 
     // 扫描表
-    fn scan_table(&self, table: String) -> LegendDBResult<Vec<Row>>;
+    fn scan_table(&mut self, table: String) -> LegendDBResult<Vec<Row>>;
 
     //获取表信息
     fn get_table(&self, table: String) -> LegendDBResult<Option<Table>>;

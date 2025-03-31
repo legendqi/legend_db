@@ -59,8 +59,8 @@ impl<E: Engine> MvccTransaction<E> {
         engine.get(key)
     }
     
-    pub fn scan_prefix(&self, prefix: Vec<u8>) -> LegendDBResult<Vec<ScanResult>> {
-        let engine = self.engine.lock()?;
+    pub fn scan_prefix(&mut self, prefix: Vec<u8>) -> LegendDBResult<Vec<ScanResult>> {
+        let mut engine = self.engine.lock()?;
         let mut iter = engine.scan_prefix(prefix);
         let mut results = Vec::new();
         while let Some((key, value)) = iter.next().transpose()? {

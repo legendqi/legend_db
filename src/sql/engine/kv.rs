@@ -113,7 +113,7 @@ impl<E: StorageEngine> Transaction for KVTransaction<E> {
         Ok(())
     }
 
-    fn scan_table(&self, table: String) -> LegendDBResult<Vec<Row>> {
+    fn scan_table(&mut self, table: String) -> LegendDBResult<Vec<Row>> {
         let prefix = KeyPrefix::Row(table.clone());
         let config = config::standard();
         let prefix_key = bincode::encode_to_vec(&prefix, config)?;
