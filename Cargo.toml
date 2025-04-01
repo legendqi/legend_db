@@ -7,6 +7,7 @@ edition = "2024"
 thiserror = "2.0.3"
 bincode = "2.0.0-rc.3"
 serde = {version = "1.0.215", features = ["derive"]}
+serde_bytes = "0.11.15"
 fs4 = "0.11.1"
 # 后期考虑使用rkyv，提升效率
 #rkyv = {version = "0.8.8", features = ["alloc", "std"]}

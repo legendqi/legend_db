@@ -32,6 +32,8 @@ pub enum LegendDBError {
     DecodeError(String),
     #[error("encode error: {0}")]
     EncodeError(String),
+    #[error("write mvcc conflict")]
+    WriteMvccConflict
 }
 
 impl From<DecodeError> for LegendDBError {
