@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::net::Shutdown::Write;
 use std::sync::{Arc, Mutex, MutexGuard};
 use bincode::{config, Decode, Encode};
 use serde::{Deserialize, Serialize};
@@ -97,7 +98,8 @@ impl MvccKey {
 #[derive(Debug, Clone, Encode, Decode)]
 pub enum MvccKeyPrefix {
     NextVersion,
-    TxnActive
+    TxnActive,
+    TxnWrite(Version),
 }
 
 impl MvccKeyPrefix {
@@ -145,11 +147,51 @@ impl<E: Engine> MvccTransaction<E> {
     }
     
     pub fn commit(&self) -> LegendDBResult<()> {
-        Ok(())
+        let mut engine = self.engine.lock()?;
+        // vec![]和 Vec::new()在创建空数组时几乎没有区别，但宏的方式会可能会有一些编译时开销
+        // let mut delete_keys = vec![];
+        let mut delete_keys = Vec::new();
+        // 找到这个当前事务的Txn Write 的信息
+        let mut txns = engine.scan_prefix(MvccKeyPrefix::TxnWrite(self.state.version).encode()?);
+        while let Some((key, value)) = txns.next().transpose()?{
+            delete_keys.push(key)
+        }
+        // 在扫描的时候，engine生命周期并未结束，导致下面使用 engine删除的时候会报错，所以需要手动结束Iterator的生命周期
+        drop(txns);
+        for key in delete_keys.into_iter() {
+            engine.delete(key)?;
+        }
+        // 从活跃事务列表中删除当前事务
+        engine.delete(MvccKey::TxnActive(self.state.version).encode()?)
     }
-    
+    // 回滚事务基本上跟提交事务差不多，还会多一步，将事务存储的数据删除
     pub fn rollback(&self) -> LegendDBResult<()> {
-        Ok(())
+        let mut engine = self.engine.lock()?;
+        // vec![]和 Vec::new()在创建空数组时几乎没有区别，但宏的方式会可能会有一些编译时开销
+        // let mut delete_keys = vec![];
+        let mut delete_keys = Vec::new();
+        // 找到这个当前事务的Txn Write 的信息
+        let mut txns = engine.scan_prefix(MvccKeyPrefix::TxnWrite(self.state.version).encode()?);
+        while let Some((key, value)) = txns.next().transpose()?{
+            match MvccKey::decode(&key)? {
+                // 原始的key
+                MvccKey::TxnWrite(_, key) => {
+                    // 拿到原始的key之后要构造MvccKey::Version的key, 通过这个key就能拿到实际用户存储的数据
+                    delete_keys.push(MvccKey::Version(key, self.state.version).encode()?)
+                },
+                _ => {
+                    return Err(LegendDBError::Internal(format!("unexpected key {:?}", String::from_utf8(key))))
+                }
+            }
+            delete_keys.push(key)
+        }
+        // 在扫描的时候，engine生命周期并未结束，导致下面使用 engine删除的时候会报错，所以需要手动结束Iterator的生命周期
+        drop(txns);
+        for key in delete_keys.into_iter() {
+            engine.delete(key)?;
+        }
+        // 从活跃事务列表中删除当前事务
+        engine.delete(MvccKey::TxnActive(self.state.version).encode()?)
     }
     
     pub fn set(&self, key: Vec<u8>, value: Vec<u8>) -> LegendDBResult<()> {
@@ -212,7 +254,28 @@ impl<E: Engine> MvccTransaction<E> {
     
     pub(crate) fn get(&self, key: Vec<u8>) -> LegendDBResult<Option<Vec<u8>>> {
         let mut engine = self.engine.lock()?;
-        engine.get(key)
+        // 假如当前的version是9
+        // 可见版本就小于等于9，就需要扫描0到9的数据
+        let from = MvccKey::Version(key.clone(), 0).encode()?;
+        let to = MvccKey::Version(key.clone(), self.state.version).encode()?;
+        // rev反转，肯定是从最新事务号开始找
+        let mut iter = engine.scan(from..=to).rev();
+        // 从最新的版本开始读取，找到一个最新的可见的版本
+        while let Some((k, v)) = iter.next().transpose()? {
+            match MvccKey::decode(&k)? {
+                MvccKey::Version(_, version) => {
+                    // 检测这个 version 是否是可见的
+                    if self.state.is_visible(version) {
+                        // 如果是可见的，那么就返回这个值
+                        return Ok(bincode::decode_from_slice(&v, config::standard())?.0);
+                    }
+                }
+                _=> {
+                    return Err(LegendDBError::Internal(format!("unexpected key {:?}", String::from_utf8(key))))
+                }
+            }
+        }
+        Ok(None)
     }
     
     pub fn scan_prefix(&mut self, prefix: Vec<u8>) -> LegendDBResult<Vec<ScanResult>> {
