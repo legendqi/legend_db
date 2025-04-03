@@ -1,3 +1,5 @@
+use std::array::TryFromSliceError;
+use std::fmt::{Display, Formatter};
 use std::io::Error;
 use std::num::{ParseFloatError, ParseIntError};
 use std::sync::{Arc, PoisonError};
@@ -33,7 +35,35 @@ pub enum LegendDBError {
     #[error("encode error: {0}")]
     EncodeError(String),
     #[error("write mvcc conflict")]
-    WriteMvccConflict
+    WriteMvccConflict,
+    #[error("serializer error: {0}")]
+    SerializerError(String),
+    #[error("deserializer error: {0}")]
+    DeserializerError(String),
+}
+
+impl From<TryFromSliceError> for LegendDBError {
+    fn from(value: TryFromSliceError) -> Self {
+        LegendDBError::TryFromSliceError(value.to_string())
+    }
+}
+
+impl serde::ser::Error for LegendDBError {
+    fn custom<T>(msg: T) -> Self
+    where
+        T: Display
+    {
+        LegendDBError::SerializerError(msg.to_string())
+    }
+}
+
+impl serde::de::Error for LegendDBError {
+    fn custom<T>(msg: T) -> Self
+    where
+        T: Display
+    {
+        LegendDBError::DeserializerError(msg.to_string())
+    }
 }
 
 impl From<DecodeError> for LegendDBError {

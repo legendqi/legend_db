@@ -3,6 +3,7 @@ pub mod memory;
 pub mod mvcc;
 mod disk;
 mod b_plus_tree;
+mod keycode;
 
 use crate::utils::custom_error::LegendDBResult;
 
