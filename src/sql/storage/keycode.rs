@@ -12,10 +12,10 @@ pub fn serializer<T: serde::ser::Serialize>(key: &T) -> LegendDBResult<Vec<u8>> 
 }
 
 pub fn deserializer<'a, T: Deserialize<'a>>(input: &'a [u8]) -> LegendDBResult<T> {
-    let deserializer =KeyCodeDeserializer {
+    let mut deserializer = KeyCodeDeserializer {
         input,
     };
-    T::deserialize(deserializer)
+    T::deserialize(&mut deserializer)
 }
 pub struct KeyCodeSerializer {
     pub output: Vec<u8>
@@ -290,7 +290,7 @@ impl<'de>  KeyCodeDeserializer<'de> {
     }
 }
 
-impl<'de> SeqAccess<'de>  for &mut KeyCodeDeserializer<'de>  {
+impl<'de> SeqAccess<'de>  for KeyCodeDeserializer<'de>  {
     type Error = LegendDBError;
 
     fn next_element_seed<T>(&mut self, seed: T) -> LegendDBResult<Option<T::Value>>
@@ -301,7 +301,7 @@ impl<'de> SeqAccess<'de>  for &mut KeyCodeDeserializer<'de>  {
     }
 }
 
-impl<'de, 'a> VariantAccess<'de>  for KeyCodeDeserializer<'de>  {
+impl<'de, 'a> VariantAccess<'de>  for &mut KeyCodeDeserializer<'de>  {
     type Error = LegendDBError;
 
     fn unit_variant(self) -> LegendDBResult<()> {
@@ -330,7 +330,7 @@ impl<'de, 'a> VariantAccess<'de>  for KeyCodeDeserializer<'de>  {
     }
 }
 
-impl<'de, 'a> EnumAccess<'de>  for KeyCodeDeserializer<'de>  {
+impl<'de, 'a> EnumAccess<'de>  for &mut KeyCodeDeserializer<'de>  {
     type Error = LegendDBError;
     type Variant = Self;
 
@@ -344,7 +344,7 @@ impl<'de, 'a> EnumAccess<'de>  for KeyCodeDeserializer<'de>  {
     }
 }
 
-impl<'de, 'a> Deserializer<'de> for KeyCodeDeserializer<'de>  {
+impl<'de, 'a> Deserializer<'de> for & mut KeyCodeDeserializer<'de>  {
     type Error = LegendDBError;
 
     fn deserialize_any<V>(self, visitor: V) -> LegendDBResult<V::Value>
