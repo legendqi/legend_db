@@ -26,6 +26,7 @@ impl<T: Transaction> dyn Executor<T> {
     }
 }
 
+#[allow(unused)]
 // 查询结果集
 #[derive(Debug)]
 pub enum ResultSet {

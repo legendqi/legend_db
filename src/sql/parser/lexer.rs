@@ -244,7 +244,8 @@ impl Display for Token {
 // -------------------------------------
 // SELECT * FROM table_name;
 pub struct Lexer<'a> {
-    iter: Peekable<Chars<'a>>
+    iter: Peekable<Chars<'a>>,
+    prev_token: Option<Token>,
 }
 
 impl<'a> Iterator for Lexer<'a> {
@@ -263,7 +264,8 @@ impl<'a> Lexer<'a> {
 
     pub fn new(sql: &'a str) -> Lexer<'a> {
         Lexer {
-            iter: sql.chars().peekable()
+            iter: sql.chars().peekable(),
+            prev_token: None,
         }
     }
 
@@ -307,7 +309,12 @@ impl<'a> Lexer<'a> {
             Some(c) if c.is_alphabetic() => Ok(self.scan_identifier()), // 扫描ident 类型
             Some(_) => Ok(self.scan_symbol()),
             None => Ok(None),
-        }
+        }.map(|token| {
+            if let Some(t) = &token {
+                self.prev_token = Some(t.clone()); // 更新上一个 Token
+            }
+            token
+        })
     }
 
     /// 扫描字符串是否是单引号
@@ -357,8 +364,17 @@ impl<'a> Lexer<'a> {
 
     //扫描符号
     fn scan_symbol(&mut self) -> Option<Token> {
+        // cannot borrow `*self` as mutable because it is also borrowed as immutable [E0502] mutable borrow occurs here
+        // Rust 不允许在同一作用域内同时存在不可变借用和可变借用，  self.prev_token（不可变借用）和 self.next_if_token（可变借用），提前获取上一个Token，不然会报不可变
+        let prev_token = self.prev_token.clone();
         self.next_if_token(|c| match c {
-            '*' => Some(Token::Star),
+            '*' => {
+                if prev_token == Some(Token::Keyword(Keyword::Select)) {
+                    Some(Token::Star)
+                } else {
+                    Some(Token::Asterisk)
+                }
+            },
             '+' => Some(Token::Plus),
             '-' => Some(Token::Minus),
             '/' => Some(Token::Slash),
@@ -516,12 +532,12 @@ mod tests {
         let tokens1 = Lexer::new("select * from tbl;")
             .peekable()
             .collect::<LegendDBResult<Vec<_>>>()?;
-
+        println!("{:?}", tokens1.clone());
         assert_eq!(
             tokens1,
             vec![
                 Token::Keyword(Keyword::Select),
-                Token::Asterisk,
+                Token::Star,
                 Token::Keyword(Keyword::From),
                 Token::Identifier("tbl".to_string()),
                 Token::Semicolon,

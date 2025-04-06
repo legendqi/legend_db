@@ -101,6 +101,7 @@ pub enum MvccKeyPrefix {
     Version(#[serde(with = "serde_bytes")] Vec<u8>),
 }
 
+#[allow(unused)]
 impl MvccKeyPrefix {
     pub fn encode(&self) -> LegendDBResult<Vec<u8>> {
         Ok(bincode::encode_to_vec(&MvccKey::NextVersion, config::standard())?)
@@ -152,7 +153,7 @@ impl<E: Engine> MvccTransaction<E> {
         let mut delete_keys = Vec::new();
         // 找到这个当前事务的Txn Write 的信息
         let mut txns = engine.scan_prefix(MvccKeyPrefix::TxnWrite(self.state.version).encode()?);
-        while let Some((key, value)) = txns.next().transpose()?{
+        while let Some((key, _)) = txns.next().transpose()?{
             delete_keys.push(key)
         }
         // 在扫描的时候，engine生命周期并未结束，导致下面使用 engine删除的时候会报错，所以需要手动结束Iterator的生命周期
@@ -171,7 +172,7 @@ impl<E: Engine> MvccTransaction<E> {
         let mut delete_keys = Vec::new();
         // 找到这个当前事务的Txn Write 的信息
         let mut txns = engine.scan_prefix(MvccKeyPrefix::TxnWrite(self.state.version).encode()?);
-        while let Some((key, value)) = txns.next().transpose()?{
+        while let Some((key, _)) = txns.next().transpose()?{
             match MvccKey::decode(&key)? {
                 // 原始的key
                 MvccKey::TxnWrite(_, key) => {
@@ -325,22 +326,16 @@ impl<E: Engine> MvccTransaction<E> {
         let mut active_txns = HashSet::new();
         let mut txn_iter = engine.scan_prefix(MvccKeyPrefix::TxnActive.encode()?);
         while let Some((key, _)) = txn_iter.next().transpose()? {
-            match MvccKey::decode(&key) {
-                Ok(version) => {
-                    match version {
-                        MvccKey::TxnActive(version) => {
-                            active_txns.insert(version);
-                        },
-                        _ => {
-                            return Err(LegendDBError::Internal(format!("unexpected key: {:?}", version)));
-                        }
-                    }
-                }
+            match MvccKey::decode(&key)? {
+                MvccKey::TxnActive(version) => {
+                    active_txns.insert(version);
+                },
                 _ => {
-                    return Err(LegendDBError::Internal("no exists active transaction set".to_string()));
+                    return Err(LegendDBError::Internal(format!("unexpected key: {:?}", String::from_utf8(key))));
                 }
+                }
+
             }
-        }
         Ok(active_txns)
     }
 }
@@ -357,7 +352,7 @@ mod tests {
     use crate::sql::storage::engine::Engine;
     use crate::sql::storage::memory::MemoryEngine;
     use crate::sql::storage::mvcc::Mvcc;
-    use crate::utils::custom_error::{LegendDBError, LegendDBResult};
+    use crate::utils::custom_error::{LegendDBResult};
 
     // 1. Get
     fn get(eng: impl Engine) -> LegendDBResult<()> {
@@ -380,8 +375,8 @@ mod tests {
 
     #[test]
     fn test_get() -> LegendDBResult<()> {
+        println!("test get");
         get(MemoryEngine::new())?;
-
         let p = tempfile::tempdir()?.into_path().join("sqldb-log");
         get(DiskEngine::new(p.clone())?)?;
         std::fs::remove_dir_all(p.parent().unwrap())?;
@@ -630,7 +625,7 @@ mod tests {
         tx.commit()?;
 
         let tx1 = mvcc.begin()?;
-        let tx2 = mvcc.begin()?;
+        // let tx2 = mvcc.begin()?;
 
         tx1.set(b"key1".to_vec(), b"val1-1".to_vec())?;
         tx1.set(b"key1".to_vec(), b"val1-2".to_vec())?;
@@ -698,7 +693,7 @@ mod tests {
         tx.commit()?;
 
         let tx1 = mvcc.begin()?;
-        let tx2 = mvcc.begin()?;
+        // let tx2 = mvcc.begin()?;
         tx1.delete(b"key1".to_vec())?;
         tx1.set(b"key2".to_vec(), b"val2-1".to_vec())?;
 

@@ -98,7 +98,7 @@ impl Engine for DiskEngine {
             log: &mut self.log,
         }
     }
-
+    
     fn scan_prefix(&mut self, prefix: Vec<u8>) -> Self::EngineIterator<'_> {
         todo!()
     }

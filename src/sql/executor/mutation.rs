@@ -3,7 +3,8 @@ use crate::sql::engine::Transaction;
 use crate::sql::executor::{Executor, ResultSet};
 use crate::sql::parser::ast::Expression;
 use crate::sql::schema::Table;
-use crate::sql::types::{DataType, Row, Value};
+use crate::sql::types::{Row, Value};
+use crate::sql::types::DataType::Null;
 use crate::utils::custom_error::{LegendDBError, LegendDBResult};
 
 pub struct Insert {
@@ -89,12 +90,13 @@ impl<T: Transaction> Executor<T> for Insert {
                 if col.nullable {
                     continue;
                 }
+                let row_data_type = insert_row[index].get_type().unwrap_or_else(|| Null);
                 // 如果列不允许为空，则检查值是否为空
-                if !col.nullable && insert_row[index].get_type() == DataType::Null {
+                if !col.nullable && row_data_type == Null {
                     return Err(LegendDBError::Internal(format!("Column {} cannot be null", col.name)));
                 }
                 // 类型不匹配则报错
-                if col.data_type != insert_row[index].get_type() {
+                if col.data_type != row_data_type {
                     return Err(LegendDBError::Internal(format!("Column type mismatch: {}", col.name)));
                 }
             }

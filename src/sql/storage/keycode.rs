@@ -97,7 +97,7 @@ impl<'a> Serializer for &'a mut KeyCodeSerializer{
     }
 
     fn serialize_i64(self, v: i64) -> LegendDBResult<Self::Ok> {
-        todo!()
+        Ok(self.output.extend(v.to_be_bytes()))
     }
 
     fn serialize_i128(self, v: i128) -> LegendDBResult<Self::Ok> {
@@ -138,7 +138,8 @@ impl<'a> Serializer for &'a mut KeyCodeSerializer{
     }
 
     fn serialize_str(self, v: &str) -> LegendDBResult<Self::Ok> {
-        todo!()
+        self.output.extend(v.as_bytes());
+        Ok(())
     }
 
     //原始值           编码后
@@ -386,7 +387,9 @@ impl<'de, 'a> Deserializer<'de> for & mut KeyCodeDeserializer<'de>  {
     where
         V: Visitor<'de>
     {
-        todo!()
+        let bytes = self.take_bytes(8);
+        let v = i64::from_be_bytes(bytes.try_into()?);
+        visitor.visit_i64(v)
     }
 
     fn deserialize_i128<V>(self, visitor: V) -> LegendDBResult<V::Value>
@@ -460,7 +463,8 @@ impl<'de, 'a> Deserializer<'de> for & mut KeyCodeDeserializer<'de>  {
     where
         V: Visitor<'de>
     {
-        todo!()
+        let bytes = self.next_bytes()?;
+        visitor.visit_str(&String::from_utf8(bytes)?)
     }
 
     fn deserialize_string<V>(self, visitor: V) -> LegendDBResult<V::Value>
@@ -571,7 +575,6 @@ impl<'de, 'a> Deserializer<'de> for & mut KeyCodeDeserializer<'de>  {
 
 #[cfg(test)]
 mod tests {
-    use serde_bytes::serialize;
     use crate::sql::storage::keycode::serializer;
     use crate::sql::storage::mvcc::MvccKey;
 

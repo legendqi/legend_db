@@ -49,20 +49,20 @@ impl Value {
     }
     
     // 获取数据类型
-    pub fn get_type(&self) -> DataType {
+    pub fn get_type(&self) -> Option<DataType> {
         match self {
-            Value::Null => DataType::Null,
-            Value::Boolean(_) => DataType::Boolean,
-            Value::Integer(_) => DataType::Integer,
-            Value::Float(_) => DataType::Float,
-            Value::String(_) => DataType::String,
-            Value::Date(_) => DataType::Date,
-            Value::Time(_) => DataType::Time,
-            Value::DateTime(_) => DataType::DateTime,
-            Value::Binary(_) => DataType::Binary,
-            Value::Json(_) => DataType::String,
-            Value::Jsonb(_) => DataType::String,
-            _ => panic!("Invalid value type"),
+            Value::Null => None,
+            Value::Boolean(_) => Some(DataType::Boolean),
+            Value::Integer(_) => Some(DataType::Integer),
+            Value::Float(_) => Some(DataType::Float),
+            Value::String(_) => Some(DataType::String),
+            Value::Date(_) => Some(DataType::Date),
+            Value::Time(_) => Some(DataType::Time),
+            Value::DateTime(_) => Some(DataType::DateTime),
+            Value::Binary(_) => Some(DataType::Binary),
+            Value::Json(_) => Some(DataType::String),
+            Value::Jsonb(_) => Some(DataType::String),
+            _ => None
         }
     }
     

@@ -1,4 +1,5 @@
-mod kv;
+#[allow(unused)]
+pub mod kv;
 
 use crate::sql::executor::ResultSet;
 use crate::sql::parser::Parser;
@@ -21,6 +22,8 @@ pub trait Engine: Clone{
     }
 }
 
+
+#[allow(unused)]
 // 抽象的事务信息，包含DDL和DML操作
 // 底层可以接入普通的KV存储殷勤，也可以接入分布式存储引擎
 pub trait Transaction {
@@ -57,12 +60,14 @@ pub trait Transaction {
     }
 }
 
+#[allow(unused)]
 // 客户端Session定义
 pub struct Session<E: Engine> {
     engine: E,
     transaction: E::Transaction,
 }
 
+#[allow(unused)]
 impl<E: Engine> Session<E>  {
     // 执行客户端SQL语句
     pub fn execute(&mut self, sql: &str) -> LegendDBResult<ResultSet> {
@@ -85,6 +90,7 @@ impl<E: Engine> Session<E>  {
     }
 }
 
+#[allow(unused)]
 fn fibonacci(term: u32) -> u32 {
     match term {
         0 => 0,
@@ -93,6 +99,7 @@ fn fibonacci(term: u32) -> u32 {
     }
 }
 
+#[allow(unused)]
 fn fibonacci_func(term: u32) -> u32 {
     match term {
         0 => 0,

@@ -4,8 +4,9 @@ use crate::sql::parser::ast::Statement::Select;
 use crate::sql::parser::lexer::{Keyword, Lexer, Token};
 use crate::sql::types::DataType;
 use crate::utils::custom_error::{LegendDBError, LegendDBResult};
-
+#[allow(unused)]
 pub mod lexer;
+#[allow(unused)]
 pub mod ast;
 
 pub struct Parser<'a> {
@@ -222,6 +223,10 @@ impl<'a> Parser<'a> {
                 column.nullable = Some(false);
                 }
                 Keyword::Default => column.default = Some(self.parse_expression()?),
+                Keyword::Primary => {
+                    self.next_expect(Token::Keyword(Keyword::Key))?;
+                    column.is_primary_key = true;
+                },
                 k => return Err(LegendDBError::Parser(format!("[Parser] Unexpected keyword {:?}", k))),
             }
         }

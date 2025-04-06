@@ -1,7 +1,8 @@
 use std::array::TryFromSliceError;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Display};
 use std::io::Error;
 use std::num::{ParseFloatError, ParseIntError};
+use std::string::FromUtf8Error;
 use std::sync::{Arc, PoisonError};
 use bincode::error::DecodeError;
 use bincode::error::EncodeError;
@@ -14,6 +15,8 @@ pub enum LegendDBError {
     ParseIntError(#[from] ParseIntError),
     #[error("parse float error: {0}")]
     ParseFloatError(#[from] ParseFloatError),
+    #[error("from utf8 error: {0}")]
+    FromUtf8Error(#[from] FromUtf8Error),
     #[error("internal error: {0}")]
     Error(#[from] Arc<Error>),
     #[error("error kind: {0}")]
