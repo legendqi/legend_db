@@ -1,5 +1,5 @@
 use crate::sql::engine::Transaction;
-use crate::sql::executor::{Executor, ResultSet};
+use crate::sql::executor::executor::{Executor, ResultSet};
 use crate::sql::schema::Table;
 use crate::utils::custom_error::LegendDBResult;
 

@@ -1,5 +1,5 @@
 use crate::sql::parser::ast::{Statement};
-use crate::sql::plan::{Node, Plan};
+use crate::sql::plan::node::{Node, Plan};
 use crate::sql::schema::{Column, Table};
 use crate::sql::types::Value;
 
@@ -47,6 +47,7 @@ impl Planner {
             Statement::Select {table_name, .. } => {
                 Node::Scan {
                     table_name,
+                    filter: None,
                 }
             }
             Statement::Delete { table_name, .. } => {
@@ -54,11 +55,14 @@ impl Planner {
                     table_name,
                 }
             },
-            Statement::Update { table_name, set, where_clause } => {
+            Statement::Update { table_name, columns, where_clause } => {
                 Node::Update {
-                    table_name,
-                    set,
-                    where_clause
+                    table_name: table_name.clone(),
+                    source: Box::new(Node::Scan {
+                        table_name,
+                        filter: where_clause,
+                    }),
+                    columns
                 }
             },
             Statement::DropTable { table_name, .. } => {

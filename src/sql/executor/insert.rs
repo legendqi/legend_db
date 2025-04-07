@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::sql::engine::Transaction;
-use crate::sql::executor::{Executor, ResultSet};
+use crate::sql::executor::executor::{Executor, ResultSet};
 use crate::sql::parser::ast::Expression;
 use crate::sql::schema::Table;
 use crate::sql::types::{Row, Value};
@@ -49,7 +49,7 @@ fn pad_row(table: &Table, row: &Row) -> LegendDBResult<Row> {
 fn make_row(table: &Table, columns: &Vec<String>, values: &Row) -> LegendDBResult<Row> {
     // 判断columns和values的长度是否一致
     if columns.len() != values.len() {
-         return Err(LegendDBError::Internal("Column and value length mismatch".to_string()))
+        return Err(LegendDBError::Internal("Column and value length mismatch".to_string()))
     }
     // 创建一个HashMap，用于存储指定的列名和值
     let mut inputs = HashMap::new();

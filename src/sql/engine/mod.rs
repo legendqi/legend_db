@@ -1,9 +1,9 @@
 #[allow(unused)]
 pub mod kv;
 
-use crate::sql::executor::ResultSet;
-use crate::sql::parser::Parser;
-use crate::sql::plan::Plan;
+use crate::sql::executor::executor::ResultSet;
+use crate::sql::parser::parser::Parser;
+use crate::sql::plan::node::Plan;
 use crate::sql::schema::Table;
 use crate::sql::types::Row;
 use crate::utils::custom_error::{LegendDBError, LegendDBResult};

@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use crate::sql::types::DataType;
 
 #[derive(Debug, PartialEq)]
@@ -5,7 +6,7 @@ pub enum Statement {
     CreateTable { name: String, columns: Vec<Column> },
     CreateDatabase { name: String },
     Insert { table_name: String, columns: Option<Vec<String>>, values: Vec<Vec<Expression>> },
-    Update { table_name: String, set: Vec<(String, Expression)>, where_clause: Option<Expression> },
+    Update { table_name: String, columns: BTreeMap<String, Expression>, where_clause: Option<BTreeMap<String, Expression>> },
     Delete { table_name: String, where_clause: Option<Expression> },
     Select { table_name: String },
     DropTable { table_name: String },

@@ -41,6 +41,8 @@ pub enum Keyword {
     Exists,
     Primary,
     Key,
+    And,
+    Or,
 }
 
 impl Keyword {
@@ -79,6 +81,8 @@ impl Keyword {
             "IF" => Some(Keyword::If),
             "NOT" => Some(Keyword::Not),
             "EXISTS" => Some(Keyword::Exists),
+            "AND" => Some(Keyword::And),
+            "OR" => Some(Keyword::Or),
             _ => None,
         }
     }
@@ -118,6 +122,8 @@ impl Keyword {
             Keyword::If => "IF",
             Keyword::Not => "NOT",
             Keyword::Exists => "EXISTS",
+            Keyword::And => "AND",
+            Keyword::Or => "OR",
         }
     }
 }
@@ -178,10 +184,6 @@ pub enum Token {
     DoubleEqual,
     // 不等于号
     NotEqual,
-    // 逻辑与
-    And,
-    // 逻辑或
-    Or,
     // 空白
     Whitespace,
 }
@@ -213,8 +215,6 @@ impl Display for Token {
             Token::LessThan => "<",
             Token::DoubleEqual => "==",
             Token::NotEqual => "!=",
-            Token::And => "&&",
-            Token::Or => "||",
             Token::Whitespace => " ",
         })
     }
@@ -383,8 +383,6 @@ impl<'a> Lexer<'a> {
             '>' => Some(Token::GreaterThan),
             '<' => Some(Token::LessThan),
             '!' => Some(Token::NotEqual),
-            '&' => Some(Token::And),
-            '|' => Some(Token::Or),
             '(' => Some(Token::LeftParen),
             ')' => Some(Token::RightParen),
             ',' => Some(Token::Comma),
