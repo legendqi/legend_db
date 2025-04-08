@@ -1,6 +1,8 @@
+use std::collections::BTreeMap;
 use bincode::{config, Decode, Encode};
 use serde::{Deserialize, Serialize};
 use crate::sql::engine::{Engine, Session, Transaction};
+use crate::sql::parser::ast::Expression;
 use crate::sql::schema::Table;
 use crate::sql::storage;
 use crate::sql::storage::engine::Engine as StorageEngine;
@@ -52,6 +54,15 @@ impl<E: StorageEngine> Engine for KVEngine<E> {
 #[derive(Debug, Clone)]
 pub struct KVTransaction<E: StorageEngine> {
     pub txn: MvccTransaction<E>,
+}
+
+fn check_row_conditions(row: &Vec<Value>, conditions: Vec<(usize, Value)>) -> bool {
+    for (index, expected_value) in conditions {
+        if row.get(index) != Some(&expected_value) {
+            return false;
+        }
+    }
+    true
 }
 
 impl<E: StorageEngine> KVTransaction<E> {
@@ -130,17 +141,50 @@ impl<E: StorageEngine> Transaction for KVTransaction<E> {
         Ok(())
     }
 
-    fn scan_table(&mut self, table: String) -> LegendDBResult<Vec<Row>> {
-        let prefix = KeyPrefix::Row(table.clone()).encode()?;
+    fn update_row(&mut self, table: &Table, id: &Value, row: Row) -> LegendDBResult<()> {
+        let new_pk = table.get_primary_key(&row)?;
+        // 如果更新了主键，则删除旧的数据
+        if new_pk != *id {
+            let key = TransactionKey::RowKey(table.name.clone(), id.clone()).encode()?;
+            self.txn.delete(key)?;
+            // return Err(LegendDBError::Internal(format!("primary key is not match")));
+        }
+        let key = TransactionKey::RowKey(table.name.clone(), new_pk).encode()?;
+        let value = bincode::encode_to_vec(row, config::standard())?;
+        self.txn.set(key, value)?;
+        Ok(())
+    }
+
+
+    fn scan_table(&mut self, table_name: String, filter: Option<BTreeMap<String, Expression>>) -> LegendDBResult<Vec<Row>> {
+        let table = self.get_table_must(table_name.clone())?;
+        let prefix = KeyPrefix::Row(table_name.clone()).encode()?;
         let config = config::standard();
         let results = self.txn.scan_prefix(prefix)?;
         let mut rows = Vec::new();
         for result in results {
             let (row, _) = bincode::decode_from_slice(&result.value, config)?;
-            rows.push(row);
+            // 根据filter进行过滤
+            match filter { 
+                None => {
+                    rows.push(row);
+                },
+                Some(ref filters) => {
+                    let mut conditions = Vec::new();
+                    for (key, value) in filters.iter() {
+                        let col_index = table.get_column_index(key.as_str())?;
+                        let value = Value::from_expression(value.to_owned());
+                        conditions.push((col_index, value));
+                    }
+                    if check_row_conditions(&row, conditions) {
+                        rows.push(row);
+                    }
+                }
+            }
         }
         Ok(rows)
     }
+    
 
     fn get_table(&self, table: String) -> LegendDBResult<Option<Table>> {
         // let bytes = to_bytes::<Error>(&value).unwrap();
@@ -203,6 +247,18 @@ mod tests {
         s.execute("insert into t1 values(2, 'b');")?;
         s.execute("insert into t1(c, a) values(200, 3);")?;
         s.execute("select * from t1;")?;
+        Ok(())
+    }
+    
+    #[test]
+    fn test_update() -> LegendDBResult<()> {
+        let kv_engine = KVEngine::new(MemoryEngine::new());
+        let mut s = kv_engine.session()?;
+        s.execute("create table t1 (a int primary key, b text default 'vv', c integer default 100);")?;
+        s.execute("insert into t1 values(1, 'a', 1);")?;
+        s.execute("insert into t1 values(2, 'b', 2);")?;
+        s.execute("insert into t1 values(1, 'c', 3);")?;
+        s.execute("update t1 set b = 'aa', c = 200  where a = 1;")?;
         Ok(())
     }
 }

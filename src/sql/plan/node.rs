@@ -46,7 +46,7 @@ impl Plan {
         Planner::new().build(stmt)
     }
 
-    pub fn execute<T: Transaction>(self, txn: &mut T) -> LegendDBResult<ResultSet> {
+    pub fn execute<T: Transaction + 'static>(self, txn: &mut T) -> LegendDBResult<ResultSet> {
         <dyn Executor<T>>::build(self.0).execute(txn)
     }
 }

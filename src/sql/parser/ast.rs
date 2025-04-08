@@ -24,7 +24,7 @@ pub struct Column {
     pub unique: bool,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
     Consts(Consts),
 }
@@ -35,7 +35,7 @@ impl From<Consts> for Expression {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Consts {
     Null,
     String(String),

@@ -1,11 +1,13 @@
 #[allow(unused)]
 pub mod kv;
 
+use std::collections::BTreeMap;
 use crate::sql::executor::executor::ResultSet;
+use crate::sql::parser::ast::Expression;
 use crate::sql::parser::parser::Parser;
 use crate::sql::plan::node::Plan;
 use crate::sql::schema::Table;
-use crate::sql::types::Row;
+use crate::sql::types::{Row, Value};
 use crate::utils::custom_error::{LegendDBError, LegendDBResult};
 
 // 抽象的SQL引擎层定义，目前只有一个KVEngine
@@ -47,9 +49,12 @@ pub trait Transaction {
 
     //创建行
     fn create_row(&mut self, table: String, row: Row) -> LegendDBResult<()>;
+    
+    // 更新行
+    fn update_row(&mut self, table: &Table, id: &Value, row: Row) -> LegendDBResult<()>;
 
     // 扫描表
-    fn scan_table(&mut self, table: String) -> LegendDBResult<Vec<Row>>;
+    fn scan_table(&mut self, table_name: String, filter: Option<BTreeMap<String, Expression>>) -> LegendDBResult<Vec<Row>>;
 
     //获取表信息
     fn get_table(&self, table: String) -> LegendDBResult<Option<Table>>;
@@ -68,7 +73,7 @@ pub struct Session<E: Engine> {
 }
 
 #[allow(unused)]
-impl<E: Engine> Session<E>  {
+impl<E: Engine + 'static> Session<E>  {
     // 执行客户端SQL语句
     pub fn execute(&mut self, sql: &str) -> LegendDBResult<ResultSet> {
         match Parser::new(sql).parse()? {

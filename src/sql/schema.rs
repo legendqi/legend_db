@@ -26,9 +26,20 @@ impl Table {
         Ok(())
     }
     
+    // 获取主键值
     pub fn get_primary_key(&self, row: &Row) -> LegendDBResult<Value> {
         let position = self.columns.iter().position(|c| c.is_primary_key).expect("table has no primary key");
         Ok(row[position].clone())
+    }
+    
+    // 获取列索引
+    pub fn get_column_index(&self, name: &str) -> LegendDBResult<usize> {
+        // 采用下面更优写法
+        // match self.columns.iter().position(|c| c.name == name) {
+        //     Some(index) => Ok(index),
+        //     None => Err(LegendDBError::Internal(format!("table {} has no column {}", self.name, name))),
+        // }
+        self.columns.iter().position(|c| c.name == name).ok_or(LegendDBError::Internal(format!("table {} has no column {}", self.name, name)))
     }
 }
 

@@ -12,13 +12,13 @@ pub trait Executor<T: Transaction> {
     fn execute(self: Box<Self<>>, txn: &mut T) -> LegendDBResult<ResultSet>;
 }
 
-impl<T: Transaction> dyn Executor<T> {
+impl<T: Transaction + 'static> dyn Executor<T> {
     pub fn build(node: Node) -> Box<dyn Executor<T>> {
         match node {
             Node::CreateTable {schema } => CreateTable::new(schema),
             Node::Insert {table_name, columns, values} => Insert::new(table_name, columns, values),
             Node::Scan {table_name, filter} => Scan::new(table_name, filter),
-            Node::Update {table_name, source, columns } => Update::new(table_name, source: , columns),
+            Node::Update {table_name, source, columns } => Update::new(table_name, Self::build(*source), columns),
             _ => panic!("Invalid node type"),
         }
     }
@@ -36,6 +36,9 @@ pub enum ResultSet {
     },
     Scan {
         columns: Vec<String>,
-        row: Vec<Row>
-    }
+        rows: Vec<Row>
+    },
+    Update {
+        count: usize
+    },
 }
