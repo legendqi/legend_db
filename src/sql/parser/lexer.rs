@@ -413,7 +413,7 @@ mod tests {
             "CREATE table tbl
                 (
                     id1 int primary key,
-                    id2 integer
+                    id2 integer default 100
                 );
                 ",
         )
@@ -434,6 +434,8 @@ mod tests {
                 Token::Comma,
                 Token::Identifier("id2".to_string()),
                 Token::Keyword(Keyword::Integer),
+                Token::Keyword(Keyword::Default),
+                Token::Number(100.to_string()),
                 Token::RightParen,
                 Token::Semicolon
             ]

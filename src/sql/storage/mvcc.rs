@@ -28,7 +28,7 @@ impl<E: Engine> Mvcc<E>  {
     }
 
     pub fn begin(&self) -> LegendDBResult<MvccTransaction<E>> {
-        Ok(MvccTransaction::begin(self.engine.clone())?)
+        MvccTransaction::begin(self.engine.clone())
     }
 }
 
@@ -88,8 +88,8 @@ impl MvccKey {
         Ok(serializer(&self)?)
     }
 
-    pub fn decode(data: Vec<u8>) -> LegendDBResult<Self> {
-        Ok(deserializer(&data)?)
+    pub fn decode(data: &[u8]) -> LegendDBResult<Self> {
+        Ok(deserializer(data)?)
     }
 }
 // 事务号前缀枚举
@@ -104,7 +104,7 @@ pub enum MvccKeyPrefix {
 #[allow(unused)]
 impl MvccKeyPrefix {
     pub fn encode(&self) -> LegendDBResult<Vec<u8>> {
-        Ok(bincode::encode_to_vec(&MvccKey::NextVersion, config::standard())?)
+        serializer(&self)
     }
 
     pub fn decode(data: &[u8]) -> LegendDBResult<Self> {
@@ -172,7 +172,7 @@ impl<E: Engine> MvccTransaction<E> {
         // 找到这个当前事务的Txn Write 的信息
         let mut txns = engine.scan_prefix(MvccKeyPrefix::TxnWrite(self.state.version).encode()?);
         while let Some((key, _)) = txns.next().transpose()?{
-            match MvccKey::decode(key.clone())? {
+            match MvccKey::decode(&key)? {
                 // 原始的key
                 MvccKey::TxnWrite(_, key) => {
                     // 拿到原始的key之后要构造MvccKey::Version的key, 通过这个key就能拿到实际用户存储的数据
@@ -225,7 +225,7 @@ impl<E: Engine> MvccTransaction<E> {
         // 2， 假如有的事务修改了这个key，比如 10 那么当前事务号6 再修改就是冲突的
         // 3， 如果是当前活跃事务修改了这个key, 比如4修改了这个key，那么5也会进行同样判断，那么5不可能修改
         if let Some((k, _)) = engine.scan(from..=to).last().transpose()? {
-            match MvccKey::decode(k.clone())? {
+            match MvccKey::decode(&k)? {
                 MvccKey::Version(_, version) => {
                     // 检测这个 version 是否是可见的
                     if !self.state.is_visible(version) {
@@ -261,7 +261,7 @@ impl<E: Engine> MvccTransaction<E> {
         let mut iter = engine.scan(from..=to).rev();
         // 从最新的版本开始读取，找到一个最新可见的版本
         while let Some((k, v)) = iter.next().transpose()? {
-            match MvccKey::decode(k.clone())? {
+            match MvccKey::decode(&k)? {
                 MvccKey::Version(_, version) => {
                     // 检测这个 version 是否是可见的
                     if self.state.is_visible(version) {
@@ -289,7 +289,7 @@ impl<E: Engine> MvccTransaction<E> {
         let mut iter = engine.scan_prefix(enc_prefix);
         let mut results = BTreeMap::new();
         while let Some((key, value)) = iter.next().transpose()? {
-            match MvccKey::decode(key.clone())? {
+            match MvccKey::decode(&key)? {
                 MvccKey::Version(raw_key, version) => {
                     if self.state.is_visible(version) {
                         match bincode::decode_from_slice(&value, config::standard())? {
@@ -325,7 +325,7 @@ impl<E: Engine> MvccTransaction<E> {
         let mut active_txns = HashSet::new();
         let mut txn_iter = engine.scan_prefix(MvccKeyPrefix::TxnActive.encode()?);
         while let Some((key, _)) = txn_iter.next().transpose()? {
-            match MvccKey::decode(key.clone())? {
+            match MvccKey::decode(&key)? {
                 MvccKey::TxnActive(version) => {
                     active_txns.insert(version);
                 },

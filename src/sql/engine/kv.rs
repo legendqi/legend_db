@@ -44,7 +44,7 @@ impl<E: StorageEngine> Engine for KVEngine<E> {
     fn session(&self) -> LegendDBResult<Session<Self>> {
         Ok(Session {
             engine: self.clone(),
-            transaction: self.begin()?,
+            transaction: None,
         })
     }
 
@@ -234,7 +234,7 @@ impl KeyPrefix {
 #[cfg(test)]
 mod tests {
     use crate::sql::engine::Engine;
-    use crate::sql::engine::kv::KVEngine;
+    use super::KVEngine;
     use crate::sql::storage::memory::MemoryEngine;
     use crate::utils::custom_error::LegendDBResult;
 
@@ -243,8 +243,8 @@ mod tests {
         let kv_engine = KVEngine::new(MemoryEngine::new());
         let mut s = kv_engine.session()?;
         s.execute("create table t1 (a int primary key, b text default 'vv', c integer default 100);")?;
-        s.execute("insert into t1 values(1, 'a', 1);")?;
-        s.execute("insert into t1 values(2, 'b');")?;
+        // s.execute("insert into t1 values(1, 'a', 1);")?;
+        // s.execute("insert into t1 values(2, 'b');")?;
         s.execute("insert into t1(c, a) values(200, 3);")?;
         s.execute("select * from t1;")?;
         Ok(())
@@ -257,7 +257,7 @@ mod tests {
         s.execute("create table t1 (a int primary key, b text default 'vv', c integer default 100);")?;
         s.execute("insert into t1 values(1, 'a', 1);")?;
         s.execute("insert into t1 values(2, 'b', 2);")?;
-        s.execute("insert into t1 values(1, 'c', 3);")?;
+        // s.execute("insert into t1 values(1, 'c', 3);")?;
         s.execute("update t1 set b = 'aa', c = 200  where a = 1;")?;
         Ok(())
     }

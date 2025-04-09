@@ -19,7 +19,7 @@ pub trait Engine: Clone{
     fn session(&self) -> LegendDBResult<Session<Self>> {
         Ok(Session {
             engine: self.clone(),
-            transaction: self.begin()?,
+            transaction: None,
         })
     }
 }
@@ -69,7 +69,7 @@ pub trait Transaction {
 // 客户端Session定义
 pub struct Session<E: Engine> {
     engine: E,
-    transaction: E::Transaction,
+    transaction: Option<E::Transaction>,
 }
 
 #[allow(unused)]

@@ -21,7 +21,7 @@ impl Planner {
                         name,
                         columns: columns.into_iter().map(|c| {
                             let nullable = c.nullable.unwrap_or(true);
-                            match c.default {
+                            let default = match c.default {
                                 Some(v) => Some(Value::from_expression(v)),
                                 None if nullable => Some(Value::Null),
                                 None => None,
@@ -30,7 +30,7 @@ impl Planner {
                                 name: c.name,
                                 data_type: c.data_type,
                                 nullable,
-                                default_value: None,
+                                default_value: default,
                                 is_primary_key: c.is_primary_key,
                             }
                         }).collect(),
