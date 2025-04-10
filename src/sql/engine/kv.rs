@@ -3,6 +3,7 @@ use bincode::{config, Decode, Encode};
 use serde::{Deserialize, Serialize};
 use crate::sql::engine::{Engine, Session, Transaction};
 use crate::sql::parser::ast::Expression;
+use crate::sql::parser::lexer::Keyword::Key;
 use crate::sql::schema::Table;
 use crate::sql::storage;
 use crate::sql::storage::engine::Engine as StorageEngine;
@@ -155,6 +156,12 @@ impl<E: StorageEngine> Transaction for KVTransaction<E> {
         Ok(())
     }
 
+    fn delete_row(&mut self, table: &Table, id: &Value) -> LegendDBResult<()> {
+        let key = TransactionKey::RowKey(table.name.clone(), id.clone()).encode()?;
+        self.txn.delete(key)?;
+        Ok(())
+    }
+
 
     fn scan_table(&mut self, table_name: String, filter: Option<BTreeMap<String, Expression>>) -> LegendDBResult<Vec<Row>> {
         let table = self.get_table_must(table_name.clone())?;
@@ -234,6 +241,7 @@ impl KeyPrefix {
 #[cfg(test)]
 mod tests {
     use crate::sql::engine::Engine;
+    use crate::sql::executor::executor::ResultSet;
     use super::KVEngine;
     use crate::sql::storage::memory::MemoryEngine;
     use crate::utils::custom_error::LegendDBResult;
@@ -257,8 +265,33 @@ mod tests {
         s.execute("create table t1 (a int primary key, b text default 'vv', c integer default 100);")?;
         s.execute("insert into t1 values(1, 'a', 1);")?;
         s.execute("insert into t1 values(2, 'b', 2);")?;
-        // s.execute("insert into t1 values(1, 'c', 3);")?;
         s.execute("update t1 set b = 'aa', c = 200  where a = 1;")?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_delete() -> LegendDBResult<()> {
+        let kv_engine = KVEngine::new(MemoryEngine::new());
+        let mut s = kv_engine.session()?;
+        // let config = bincode::config::standard();
+        // let encode_str = bincode::encode_to_vec("1", config)?;
+        // println!("{:?}", encode_str);
+        // let decoded_str = bincode::decode_from_slice::<String, _>(&encode_str, config)?;
+        // print!("{:?}", decoded_str);
+        // assert_eq!(decoded_str.0, "1".to_string());
+        s.execute("create table t1 (a int primary key, b text default 'vv', c integer default 100);")?;
+        s.execute("insert into t1 values(1, 'a', 1);")?;
+        s.execute("insert into t1 values(2, 'b', 2);")?;
+        s.execute("insert into t1 values(3, 'b', 3);")?;
+        s.execute("delete from t1 where a = 1;")?;
+        match s.execute("select * from t1;")? { 
+            ResultSet::Scan { columns, rows} => {
+                for row in rows {
+                    println!("{:?}", row);
+                }
+            }
+            _ => unreachable!()
+        }
         Ok(())
     }
 }

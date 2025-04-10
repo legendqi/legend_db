@@ -24,6 +24,8 @@ pub enum Node {
 
     Delete {
         table_name: String,
+        // 扫描复合条件的数据
+        source: Box<Node>,
     },
     Update {
         table_name: String,

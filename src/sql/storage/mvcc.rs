@@ -279,7 +279,7 @@ impl<E: Engine> MvccTransaction<E> {
     
     pub fn scan_prefix(&mut self, prefix: Vec<u8>) -> LegendDBResult<Vec<ScanResult>> {
         let mut engine = self.engine.lock()?;
-        let mut enc_prefix = MvccKeyPrefix::Version(prefix.clone()).encode()?;
+        let mut enc_prefix = MvccKeyPrefix::Version(prefix).encode()?;
         // 原始值           编码后
         // 97 98 99     -> 97 98 99 0 0
         // 前缀原始值        前缀编码后
@@ -298,7 +298,7 @@ impl<E: Engine> MvccTransaction<E> {
                             },
                             (None, _) => {
                                 return Err(LegendDBError::Internal(format!(
-                                    "Unexepected value {:?}",
+                                    "unexpected value {:?}",
                                     String::from_utf8(value)
                                 )))
                             },
@@ -307,7 +307,7 @@ impl<E: Engine> MvccTransaction<E> {
                 }
                 _ => {
                     return Err(LegendDBError::Internal(format!(
-                        "Unexepected key {:?}",
+                        "unexpected key {:?}",
                         String::from_utf8(key)
                     )))
                 }

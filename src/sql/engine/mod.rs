@@ -53,6 +53,9 @@ pub trait Transaction {
     // 更新行
     fn update_row(&mut self, table: &Table, id: &Value, row: Row) -> LegendDBResult<()>;
 
+    // 删除行
+    fn delete_row(&mut self, table: &Table, id: &Value) -> LegendDBResult<()>;
+
     // 扫描表
     fn scan_table(&mut self, table_name: String, filter: Option<BTreeMap<String, Expression>>) -> LegendDBResult<Vec<Row>>;
 

@@ -545,4 +545,32 @@ mod tests {
         );
         Ok(())
     }
+
+    #[test]
+    fn test_lexer_update() -> LegendDBResult<()> {
+        let tokens1 = Lexer::new("update tb1 set a = 1, b = 2 where c=2 and d=4;")
+            .peekable()
+            .collect::<LegendDBResult<Vec<_>>>()?;
+        println!("{:?}", tokens1.clone());
+        Ok(())
+    }
+    #[test]
+    fn test_lexer_delete() -> LegendDBResult<()> {
+        let tokens1 = Lexer::new("delete tb1 where c=2;")
+            .peekable()
+            .collect::<LegendDBResult<Vec<_>>>()?;
+        println!("{:?}", tokens1.clone());
+        assert_eq!(tokens1, 
+        vec![
+            Token::Keyword(Keyword::Delete),
+            Token::Identifier("tb1".to_string()),
+            Token::Keyword(Keyword::Where),
+            Token::Identifier("c".to_string()),
+            Token::Equal,
+            Token::Number("2".to_string()),
+            Token::Semicolon,
+        ]);
+        Ok(())
+    }
+    
 }

@@ -45,7 +45,7 @@ impl<T: Transaction> Executor<T> for Update<T> {
                     count += 1;
                 }
             },
-            _ => {return Err(LegendDBError::Internal("Unecpected result set".into()))}
+            _ => {return Err(LegendDBError::Internal("Unexpected result set".into()))}
         }
         Ok(ResultSet::Update { count })
     }

@@ -50,9 +50,13 @@ impl Planner {
                     filter: None,
                 }
             }
-            Statement::Delete { table_name, .. } => {
+            Statement::Delete { table_name, where_clause } => {
                 Node::Delete {
-                    table_name,
+                    table_name: table_name.clone(),
+                    source: Box::new(Node::Scan {
+                        table_name,
+                        filter: where_clause,
+                    }),
                 }
             },
             Statement::Update { table_name, columns, where_clause } => {

@@ -30,6 +30,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_statement(&mut self) -> LegendDBResult<Statement> {
+        // 查看第一个token类型
         match self.custom_peek()? {
             Some(Token::Keyword(Keyword::Create)) => self.parse_ddl(),
             Some(Token::Keyword(Keyword::Insert)) => self.parse_insert(),
@@ -40,15 +41,16 @@ impl<'a> Parser<'a> {
             None => Err(LegendDBError::Parser("[Parser] Unexpected end of input".to_string())),
         }
     }
-
+    
+    // 解析delete
     fn parse_delete(&mut self) -> LegendDBResult<Statement> {
         self.next_expect(Token::Keyword(Keyword::Delete))?;
         self.next_expect(Token::Keyword(Keyword::From))?;
         let table_name = self.next_ident()?;
-        self.next_expect(Token::Keyword(Keyword::Where))?;
+        let where_clause = self.parse_where_clause()?;
         Ok(Statement::Delete {
             table_name,
-            where_clause: None,
+            where_clause,
         })
     }
 

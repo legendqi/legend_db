@@ -1,4 +1,5 @@
 use crate::sql::engine::Transaction;
+use crate::sql::executor::delete::Delete;
 use crate::sql::executor::insert::Insert;
 use crate::sql::executor::query::Scan;
 use crate::sql::executor::schema::CreateTable;
@@ -19,6 +20,7 @@ impl<T: Transaction + 'static> dyn Executor<T> {
             Node::Insert {table_name, columns, values} => Insert::new(table_name, columns, values),
             Node::Scan {table_name, filter} => Scan::new(table_name, filter),
             Node::Update {table_name, source, columns } => Update::new(table_name, Self::build(*source), columns),
+            Node::Delete {table_name, source} => Delete::new(table_name, Self::build(*source)),
             _ => panic!("Invalid node type"),
         }
     }
@@ -41,4 +43,7 @@ pub enum ResultSet {
     Update {
         count: usize
     },
+    Delete {
+        count: usize
+    }
 }

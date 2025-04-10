@@ -7,7 +7,7 @@ pub enum Statement {
     CreateDatabase { name: String },
     Insert { table_name: String, columns: Option<Vec<String>>, values: Vec<Vec<Expression>> },
     Update { table_name: String, columns: BTreeMap<String, Expression>, where_clause: Option<BTreeMap<String, Expression>> },
-    Delete { table_name: String, where_clause: Option<Expression> },
+    Delete { table_name: String, where_clause: Option<BTreeMap<String, Expression>> },
     Select { table_name: String },
     DropTable { table_name: String },
     DropDatabase { name: String },
