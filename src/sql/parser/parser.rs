@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 use std::iter::Peekable;
-use crate::sql::parser::ast::{Column, Consts, Expression, Statement};
+use crate::sql::parser::ast::{Column, Consts, Expression, OrderDirection, Statement};
 use crate::sql::parser::ast::Statement::Select;
 use crate::sql::parser::lexer::{Keyword, Lexer, Token};
 use crate::sql::types::DataType;
@@ -9,6 +9,7 @@ use crate::utils::custom_error::{LegendDBError, LegendDBResult};
 pub struct Parser<'a> {
     lexer: Peekable<Lexer<'a>>
 }
+
 
 impl<'a> Parser<'a> {
     pub fn new(input: &'a str) -> Self {
@@ -110,6 +111,7 @@ impl<'a> Parser<'a> {
         let table_name = self.next_ident()?;
         Ok(Select {
             table_name,
+            order_by: self.parse_order_by()?
         })
     }
 
@@ -279,7 +281,8 @@ impl<'a> Parser<'a> {
             }
         })
     }
-
+    
+    // 解析where子句
     fn parse_where_clause(&mut self) -> LegendDBResult<Option<BTreeMap<String, Expression>>> {
         if self.next_if_token(Token::Keyword(Keyword::Where)).is_none() {
             return Ok(None);
@@ -301,10 +304,37 @@ impl<'a> Parser<'a> {
         }
         Ok(Some(where_clause))
     }
+    
+    // 解析order by排序
+    fn parse_order_by(&mut self) -> LegendDBResult<Vec<(String, OrderDirection)>> {
+        if self.next_if_token(Token::Keyword(Keyword::Order)).is_none() {
+            return Ok(vec![]);
+        }
+        self.next_expect(Token::Keyword(Keyword::By))?;
+        let mut order_conditions: Vec<(String, OrderDirection)> = Vec::new();
+        loop {
+            let column_name = self.next_ident()?;
+            // let order_keyword = match self.next_if(|x| matches!(x, Token::Keyword(Keyword::Asc) | Token::Keyword(Keyword::Desc))) {
+            //     Some(Token::Keyword(Keyword::Asc)) => {OrderDirection::Asc}
+            //     Some(Token::Keyword(Keyword::Desc)) => {OrderDirection::Desc}
+            //     _ => {OrderDirection::Asc}
+            // };
+            let order = match self.next_if_keyword() {
+                Some(Token::Keyword(Keyword::Asc)) => OrderDirection::Asc,
+                Some(Token::Keyword(Keyword::Desc)) => OrderDirection::Desc,
+                _ => OrderDirection::Asc,
+            };
+            order_conditions.push((column_name, order));
+            if self.next_if_token(Token::Comma).is_none() {
+                break;
+            }
+        }
+        Ok(order_conditions)
+    }
 
     fn parse_create_database(&mut self) -> LegendDBResult<Statement> {
         Ok(Statement::CreateDatabase {
-            name: self.next_ident()?,
+            database_name: self.next_ident()?,
         })
     }
 
@@ -475,6 +505,7 @@ mod tests {
             stmt,
             Statement::Select  {
                 table_name: "tbl1".to_string(),
+                order_by: vec![],
             }
         );
         Ok(())

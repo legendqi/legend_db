@@ -20,7 +20,7 @@ impl Planner {
                     schema: Table {
                         name,
                         columns: columns.into_iter().map(|c| {
-                            let nullable = c.nullable.unwrap_or(true);
+                            let nullable = c.nullable.unwrap_or(!c.is_primary_key);
                             let default = match c.default {
                                 Some(v) => Some(Value::from_expression(v)),
                                 None if nullable => Some(Value::Null),
@@ -44,11 +44,18 @@ impl Planner {
                     values
                 }
             },
-            Statement::Select {table_name, .. } => {
-                Node::Scan {
+            Statement::Select {table_name, order_by } => {
+                let mut scan_node = Node::Scan {
                     table_name,
                     filter: None,
-                }
+                };
+                if order_by.len() > 0 {
+                    scan_node = Node::OrderBy {
+                        source: Box::new(scan_node),
+                        order_by,
+                    }
+                };
+                scan_node
             }
             Statement::Delete { table_name, where_clause } => {
                 Node::Delete {
@@ -69,9 +76,19 @@ impl Planner {
                     columns
                 }
             },
-            Statement::DropTable { table_name, .. } => {
-                Node::Drop {
+            Statement::DropTable { table_name } => {
+                Node::DropTable {
                     table_name,
+                }
+            },
+            Statement::CreateDatabase { database_name} => {
+                Node::CreateDatabase {
+                    database_name,
+                }
+            },
+            Statement::DropDatabase { database_name } => {
+                Node::DropDatabase {
+                    database_name,
                 }
             },
             _ => panic!("Unsupported statement"),

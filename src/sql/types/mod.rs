@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use crate::sql::parser::ast::{Consts, Expression};
@@ -34,6 +35,23 @@ pub enum Value {
     Union(Vec<Value>),
     Json(String),
     Jsonb(String),
+}
+
+impl PartialOrd for Value {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match (self, other) { 
+            (Value::Null, Value::Null) => Some(Ordering::Equal),
+            (Value::Null, _) => Some(Ordering::Less),
+            (_, Value::Null) => Some(Ordering::Greater),
+            (Value::Boolean(a), Value::Boolean(b)) => a.partial_cmp(b),
+            (Value::Integer(a), Value::Integer(b)) => a.partial_cmp(b),
+            (Value::Integer(a), Value::Float(b)) => (*a as f64).partial_cmp(b),
+            (Value::Float(a), Value::Float(b)) => a.partial_cmp(b),
+            (Value::Float(a), Value::Integer(b)) => a.partial_cmp(&(*b as f64)),
+            (Value::String(a), Value::String(b)) => a.partial_cmp(b),
+            (_, _) => None,
+        }
+    }
 }
 
 impl Value {

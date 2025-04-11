@@ -1,7 +1,7 @@
 use crate::sql::engine::Transaction;
 use crate::sql::executor::delete::Delete;
 use crate::sql::executor::insert::Insert;
-use crate::sql::executor::query::Scan;
+use crate::sql::executor::query::{Order, Scan};
 use crate::sql::executor::schema::CreateTable;
 use crate::sql::executor::update::Update;
 use crate::sql::plan::node::Node;
@@ -21,7 +21,10 @@ impl<T: Transaction + 'static> dyn Executor<T> {
             Node::Scan {table_name, filter} => Scan::new(table_name, filter),
             Node::Update {table_name, source, columns } => Update::new(table_name, Self::build(*source), columns),
             Node::Delete {table_name, source} => Delete::new(table_name, Self::build(*source)),
-            _ => panic!("Invalid node type"),
+            Node::CreateDatabase {database_name} => todo!("暂未支持"),
+            Node::DropDatabase {database_name} => todo!("暂未支持"),
+            Node::DropTable {table_name} => todo!("暂未支持"),
+            Node::OrderBy {source, order_by} => Order::new(Self::build(*source), order_by),
         }
     }
 }
@@ -45,5 +48,9 @@ pub enum ResultSet {
     },
     Delete {
         count: usize
-    }
+    },
+    Order {
+        columns: Vec<String>,
+        rows: Vec<Row>
+    },
 }

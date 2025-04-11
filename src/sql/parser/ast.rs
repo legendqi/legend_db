@@ -4,13 +4,20 @@ use crate::sql::types::DataType;
 #[derive(Debug, PartialEq)]
 pub enum Statement {
     CreateTable { name: String, columns: Vec<Column> },
-    CreateDatabase { name: String },
+    CreateDatabase { database_name: String },
     Insert { table_name: String, columns: Option<Vec<String>>, values: Vec<Vec<Expression>> },
     Update { table_name: String, columns: BTreeMap<String, Expression>, where_clause: Option<BTreeMap<String, Expression>> },
     Delete { table_name: String, where_clause: Option<BTreeMap<String, Expression>> },
-    Select { table_name: String },
+    // Select { table_name: String, column: Column, order_by: Vec<(String, OrderDirection)> },
+    Select { table_name: String, order_by: Vec<(String, OrderDirection)> },
     DropTable { table_name: String },
-    DropDatabase { name: String },
+    DropDatabase { database_name: String },
+}
+
+#[derive(Debug, PartialEq)]
+pub enum OrderDirection {
+    Asc,
+    Desc,
 }
 
 #[derive(Debug, PartialEq)]

@@ -43,6 +43,10 @@ pub enum Keyword {
     Key,
     And,
     Or,
+    Order,
+    By,
+    Asc,
+    Desc,
 }
 
 impl Keyword {
@@ -83,6 +87,10 @@ impl Keyword {
             "EXISTS" => Some(Keyword::Exists),
             "AND" => Some(Keyword::And),
             "OR" => Some(Keyword::Or),
+            "ORDER" => Some(Keyword::Order),
+            "BY" => Some(Keyword::By),
+            "ASC" => Some(Keyword::Asc),
+            "DESC" => Some(Keyword::Desc),
             _ => None,
         }
     }
@@ -124,6 +132,10 @@ impl Keyword {
             Keyword::Exists => "EXISTS",
             Keyword::And => "AND",
             Keyword::Or => "OR",
+            Keyword::Order => "ORDER",
+            Keyword::By => "BY",
+            Keyword::Asc => "ASC",
+            Keyword::Desc => "DESC",
         }
     }
 }

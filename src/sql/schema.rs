@@ -23,6 +23,30 @@ impl Table {
             0 => return Err(LegendDBError::Internal(format!("table {} has no primary key", self.name))),
             _ => return Err(LegendDBError::Internal(format!("table {} has more than one primary key", self.name))),
         }
+        // 检查列信息
+        for column in &self.columns {
+            // 检查列名
+            if column.name.is_empty() {
+                return Err(LegendDBError::Internal(format!("table {} has empty column name", self.name)));
+            }
+            // 主键不能为空
+            if column.nullable && column.default_value.is_none() {
+                return Err(LegendDBError::Internal(format!("table {} has nullable column {} without default value", self.name, column.name)));
+            }
+            // 检查列类型
+            if let Some(default_value) = &column.default_value {
+                match default_value.get_type() { 
+                    Some(dt) => {
+                        if dt != column.data_type {
+                            return Err(LegendDBError::Internal(format!("table {} has column {} with invalid default value type", self.name, column.name)));
+                        }
+                    },
+                    None => {
+                        return Err(LegendDBError::Internal(format!("table {} has column {} with invalid default value", self.name, column.name)));
+                    }
+                }
+            }
+        }
         Ok(())
     }
     

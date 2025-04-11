@@ -81,7 +81,8 @@ impl<'a> Serializer for &'a mut KeyCodeSerializer{
     type SerializeStructVariant = serde::ser::Impossible<(),  Self::Error>;
 
     fn serialize_bool(self, v: bool) -> LegendDBResult<Self::Ok> {
-        todo!()
+        self.output.push(v as u8);
+        Ok(())
     }
 
     fn serialize_i8(self, v: i8) -> LegendDBResult<Self::Ok> {
@@ -359,7 +360,10 @@ impl<'de, 'a> Deserializer<'de> for & mut KeyCodeDeserializer<'de>  {
     where
         V: Visitor<'de>
     {
-        todo!()
+        let v = self.take_bytes(1)[0];
+        // v == 0 ==> false
+        // 否则为true
+        visitor.visit_bool(v != 0)
     }
 
     fn deserialize_i8<V>(self, visitor: V) -> LegendDBResult<V::Value>

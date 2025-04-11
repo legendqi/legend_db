@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 use crate::sql::engine::Transaction;
-use crate::sql::parser::ast::{Expression, Statement};
+use crate::sql::parser::ast::{Expression, OrderDirection, Statement};
 use crate::sql::executor::executor::{Executor, ResultSet};
 use crate::sql::plan::planner::Planner;
 use crate::sql::schema::Table;
@@ -10,6 +10,9 @@ use crate::utils::custom_error::LegendDBResult;
 pub enum Node {
     CreateTable {
         schema: Table
+    },
+    DropTable {
+        table_name: String,
     },
     Insert {
         table_name: String,
@@ -33,8 +36,16 @@ pub enum Node {
         source: Box<Node>,
         columns: BTreeMap<String, Expression>,
     },
-    Drop {
-        table_name: String,
+    // 排序节点
+    OrderBy {
+        source: Box<Node>,
+        order_by: Vec<(String, OrderDirection)>
+    },
+    CreateDatabase {
+        database_name: String,
+    },
+    DropDatabase {
+        database_name: String,
     },
 }
 
