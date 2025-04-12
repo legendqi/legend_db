@@ -47,6 +47,8 @@ pub enum Keyword {
     By,
     Asc,
     Desc,
+    Limit,
+    Offset
 }
 
 impl Keyword {
@@ -91,6 +93,8 @@ impl Keyword {
             "BY" => Some(Keyword::By),
             "ASC" => Some(Keyword::Asc),
             "DESC" => Some(Keyword::Desc),
+            "LIMIT" => Some(Keyword::Limit),
+            "OFFSET" => Some(Keyword::Offset),
             _ => None,
         }
     }
@@ -136,6 +140,8 @@ impl Keyword {
             Keyword::By => "BY",
             Keyword::Asc => "ASC",
             Keyword::Desc => "DESC",
+            Keyword::Limit => "LIMIT",
+            Keyword::Offset => "OFFSET",
         }
     }
 }

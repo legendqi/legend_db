@@ -1,6 +1,5 @@
-use crate::sql::engine::Transaction;
+use crate::sql::engine::engine::Transaction;
 use crate::sql::executor::executor::{Executor, ResultSet};
-use crate::sql::types::Value;
 use crate::utils::custom_error::{LegendDBError, LegendDBResult};
 
 pub struct Delete<T: Transaction> {

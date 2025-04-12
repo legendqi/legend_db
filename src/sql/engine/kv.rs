@@ -1,9 +1,8 @@
 use std::collections::BTreeMap;
 use bincode::{config, Decode, Encode};
 use serde::{Deserialize, Serialize};
-use crate::sql::engine::{Engine, Session, Transaction};
+use crate::sql::engine::engine::{Engine, Session, Transaction};
 use crate::sql::parser::ast::Expression;
-use crate::sql::parser::lexer::Keyword::Key;
 use crate::sql::schema::Table;
 use crate::sql::storage;
 use crate::sql::storage::engine::Engine as StorageEngine;
@@ -81,10 +80,11 @@ impl<E: StorageEngine> Transaction for KVTransaction<E> {
         Ok(self.txn.rollback()?)
     }
 
+    #[allow(unused)]
     fn create_database(&self, name: &str) -> LegendDBResult<()> {
         todo!()
     }
-
+    #[allow(unused)]
     fn drop_database(&self, name: &str) -> LegendDBResult<()> {
         todo!()
     }
@@ -109,6 +109,7 @@ impl<E: StorageEngine> Transaction for KVTransaction<E> {
         Ok(())
     }
 
+    #[allow(unused)]
     fn drop_table(&self, name: &str) -> LegendDBResult<()> {
         todo!()
     }
@@ -240,7 +241,7 @@ impl KeyPrefix {
 
 #[cfg(test)]
 mod tests {
-    use crate::sql::engine::Engine;
+    use crate::sql::engine::engine::Engine;
     use crate::sql::executor::executor::ResultSet;
     use super::KVEngine;
     use crate::sql::storage::memory::MemoryEngine;

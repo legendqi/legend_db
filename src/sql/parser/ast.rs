@@ -9,7 +9,7 @@ pub enum Statement {
     Update { table_name: String, columns: BTreeMap<String, Expression>, where_clause: Option<BTreeMap<String, Expression>> },
     Delete { table_name: String, where_clause: Option<BTreeMap<String, Expression>> },
     // Select { table_name: String, column: Column, order_by: Vec<(String, OrderDirection)> },
-    Select { table_name: String, order_by: Vec<(String, OrderDirection)> },
+    Select { table_name: String, order_by: Vec<(String, OrderDirection)>, limit: Option<Expression>, offset: Option<Expression> },
     DropTable { table_name: String },
     DropDatabase { database_name: String },
 }

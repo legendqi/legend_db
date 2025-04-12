@@ -1,8 +1,9 @@
-use crate::sql::engine::Transaction;
+use crate::sql::engine::engine::Transaction;
+use crate::sql::executor::databases::{CreateDataBase, DropDataBase};
 use crate::sql::executor::delete::Delete;
 use crate::sql::executor::insert::Insert;
-use crate::sql::executor::query::{Order, Scan};
-use crate::sql::executor::schema::CreateTable;
+use crate::sql::executor::query::{Limit, Offset, Order, Scan};
+use crate::sql::executor::schema::{CreateTable, DropTable};
 use crate::sql::executor::update::Update;
 use crate::sql::plan::node::Node;
 use crate::sql::types::Row;
@@ -21,10 +22,12 @@ impl<T: Transaction + 'static> dyn Executor<T> {
             Node::Scan {table_name, filter} => Scan::new(table_name, filter),
             Node::Update {table_name, source, columns } => Update::new(table_name, Self::build(*source), columns),
             Node::Delete {table_name, source} => Delete::new(table_name, Self::build(*source)),
-            Node::CreateDatabase {database_name} => todo!("暂未支持"),
-            Node::DropDatabase {database_name} => todo!("暂未支持"),
-            Node::DropTable {table_name} => todo!("暂未支持"),
+            Node::CreateDatabase {database_name} => CreateDataBase::new(database_name),
+            Node::DropDatabase {database_name} => DropDataBase::new(database_name),
+            Node::DropTable {table_name} => DropTable::new(table_name),
             Node::OrderBy {source, order_by} => Order::new(Self::build(*source), order_by),
+            Node::Limit {source, limit} => Limit::new(Self::build(*source), limit),
+            Node::Offset {source, offset} => Offset::new(Self::build(*source), offset),
         }
     }
 }
@@ -33,7 +36,16 @@ impl<T: Transaction + 'static> dyn Executor<T> {
 // 查询结果集
 #[derive(Debug)]
 pub enum ResultSet {
+    CreateDatabase {
+        database_name: String
+    },
+    DropDatabase {
+        database_name: String
+    },
     CreateTable {
+        table_name: String
+    },
+    DropTable {
         table_name: String
     },
     Insert {

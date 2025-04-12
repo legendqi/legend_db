@@ -111,7 +111,21 @@ impl<'a> Parser<'a> {
         let table_name = self.next_ident()?;
         Ok(Select {
             table_name,
-            order_by: self.parse_order_by()?
+            order_by: self.parse_order_by()?,
+            limit: {
+                if self.next_if_token(Token::Keyword(Keyword::Limit)).is_some() {
+                    Some(self.parse_expression()?)
+                } else { 
+                    None
+                }
+            },
+            offset: {
+                if self.next_if_token(Token::Keyword(Keyword::Offset)).is_some() {
+                    Some(self.parse_expression()?)
+                } else { 
+                    None
+                }
+            },
         })
     }
 
@@ -410,9 +424,10 @@ impl<'a> Parser<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BTreeMap;
+    use crate::sql::parser::parser::Consts;
+use std::collections::BTreeMap;
     use crate::{sql::parser::ast};
-    use crate::sql::parser::ast::Statement;
+    use crate::sql::parser::ast::{Expression, Statement};
     use crate::utils::custom_error::LegendDBResult;
     use super::Parser;
 
@@ -499,13 +514,15 @@ mod tests {
 
     #[test]
     fn test_parser_select() -> LegendDBResult<()> {
-        let sql = "select * from tbl1;";
+        let sql = "select * from tbl1 limit 10 offset 20;";
         let stmt = Parser::new(sql).parse()?;
         assert_eq!(
             stmt,
             Statement::Select  {
                 table_name: "tbl1".to_string(),
                 order_by: vec![],
+                limit: Some(Expression::Consts(Consts::Integer(10))),
+                offset: Some(Expression::Consts(Consts::Integer(20))),
             }
         );
         Ok(())
@@ -517,11 +534,11 @@ mod tests {
         let stmt = Parser::new(sql).parse()?;
         println!("{:?}", stmt);
         let mut columns = BTreeMap::new();
-        columns.insert("a".to_string(), ast::Consts::Integer(1).into());
-        columns.insert("b".to_string(), ast::Consts::Integer(2).into());
+        columns.insert("a".to_string(), Consts::Integer(1).into());
+        columns.insert("b".to_string(), Consts::Integer(2).into());
         let mut where_clause = BTreeMap::new();
-        where_clause.insert("c".to_string(), ast::Consts::Integer(3).into());
-        where_clause.insert("d".to_string(), ast::Consts::Integer(4).into());
+        where_clause.insert("c".to_string(), Consts::Integer(3).into());
+        where_clause.insert("d".to_string(), Consts::Integer(4).into());
         assert_eq!(
             stmt,
             Statement::Update {
