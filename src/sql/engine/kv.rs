@@ -328,4 +328,35 @@ mod tests {
         std::fs::remove_dir_all(p.parent().unwrap())?;
         Ok(())
     }
+
+    #[test]
+    fn test_cross_join() -> LegendDBResult<()> {
+        let p = tempfile::tempdir()?.into_path().join("sqldb-log");
+        let kvengine = KVEngine::new(DiskEngine::new(p.clone())?);
+        let mut s = kvengine.session()?;
+        s.execute("create table t1 (a int primary key);")?;
+        s.execute("create table t2 (b int primary key);")?;
+        s.execute("create table t3 (c int primary key);")?;
+
+        s.execute("insert into t1 values (1), (2), (3);")?;
+        s.execute("insert into t2 values (4), (5), (6);")?;
+        s.execute("insert into t3 values (7), (8), (9);")?;
+
+        match s.execute("select * from t1 cross join t2 cross join t3;")? {
+            ResultSet::Scan { columns, rows } => {
+                println!("{:?}", columns);
+                println!("{:?}", rows);
+                println!("{:?} len", rows.len());
+                assert_eq!(3, columns.len());
+                assert_eq!(27, rows.len());
+                // for row in rows {
+                //     println!("{:?}", row);
+                // }
+            }
+            _ => unreachable!(),
+        }
+
+        std::fs::remove_dir_all(p.parent().unwrap())?;
+        Ok(())
+    }
 }

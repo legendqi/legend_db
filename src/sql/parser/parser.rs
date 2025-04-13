@@ -88,11 +88,8 @@ impl<'a> Parser<'a> {
     // 解析select语句，暂时只支持select * from
     fn parse_select(&mut self) -> LegendDBResult<Statement> {
         // 解析select
-        let columns = self.parse_select_columns()?;
-        self.next_expect(Token::Keyword(Keyword::From))?;
-        let table_name = self.next_ident()?;
         Ok(Select {
-            columns,
+            columns: self.parse_select_columns()?,
             from: self.parse_from()?,
             order_by: self.parse_order_by()?,
             limit: {
@@ -375,8 +372,6 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_from_table(&mut self) -> LegendDBResult<FromItem> {
-        self.next_expect(Token::Keyword(Keyword::Table))?;
-        let table_name = self.next_ident()?;
         // 判断是否有别名
         let alias = match self.next_if_token(Token::Keyword(Keyword::As)) {
             Some(_) => {
@@ -479,7 +474,7 @@ mod tests {
     use crate::sql::parser::parser::Consts;
 use std::collections::BTreeMap;
     use crate::{sql::parser::ast};
-    use crate::sql::parser::ast::{Expression, Statement};
+    use crate::sql::parser::ast::{Statement};
     use crate::utils::custom_error::LegendDBResult;
     use super::Parser;
 

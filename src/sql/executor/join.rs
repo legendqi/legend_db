@@ -28,16 +28,17 @@ impl<T: Transaction> Executor<T> for NestLoopJoinExecutor<T> {
                 let mut new_columns = columns.clone();
                 new_columns.extend(right_columns);
                for row in rows {
+                   let mut row = row.clone();
                    for right_row in &right_rows {
                        // 遍历左右两边的行，进行连接
                        // 构建连接后的行
-                       new_rows.extend(row.clone());
-                       new_rows.extend(right_row.clone());
+                       row.extend(right_row.clone());
+                       new_rows.push(row.clone());
                    }
                }
                 return Ok(ResultSet::Scan {
                     columns: new_columns,
-                    rows: vec![new_rows],
+                    rows: new_rows,
                 })
             }
         }
