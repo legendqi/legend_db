@@ -49,7 +49,11 @@ pub enum Keyword {
     Desc,
     Limit,
     Offset,
-    As
+    As,
+    Cross,
+    Join,
+    Left,
+    Right,
 }
 
 impl Keyword {
@@ -97,6 +101,10 @@ impl Keyword {
             "LIMIT" => Some(Keyword::Limit),
             "OFFSET" => Some(Keyword::Offset),
             "AS" => Some(Keyword::As),
+            "CROSS" => Some(Keyword::Cross),
+            "JOIN" => Some(Keyword::Join),
+            "LEFT" => Some(Keyword::Left),
+            "RIGHT" => Some(Keyword::Right),
             _ => None,
         }
     }
@@ -145,6 +153,10 @@ impl Keyword {
             Keyword::Limit => "LIMIT",
             Keyword::Offset => "OFFSET",
             Keyword::As => "AS",
+            Keyword::Cross => "CROSS",
+            Keyword::Join => "JOIN",
+            Keyword::Left => "LEFT",
+            Keyword::Right => "RIGHT",
         }
     }
 }

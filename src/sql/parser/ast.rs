@@ -9,9 +9,35 @@ pub enum Statement {
     Update { table_name: String, columns: BTreeMap<String, Expression>, where_clause: Option<BTreeMap<String, Expression>> },
     Delete { table_name: String, where_clause: Option<BTreeMap<String, Expression>> },
     // 别名可有可无
-    Select { columns: Vec<(Expression, Option<String>)>, table_name: String, order_by: Vec<(String, OrderDirection)>, limit: Option<Expression>, offset: Option<Expression> },
+    Select { 
+        columns: Vec<(Expression, Option<String>)>,
+        from: FromItem,
+        order_by: Vec<(String, OrderDirection)>,
+        limit: Option<Expression>,
+        offset: Option<Expression>
+    },
     DropTable { table_name: String },
     DropDatabase { database_name: String },
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum FromItem {
+    Table { name: String, alias: Option<String> },
+    // SubQuery { query: Box<Statement> },
+    Join {
+        left: Box<FromItem>,
+        right: Box<FromItem>,
+        join_type: JoinType,
+    },
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum JoinType {
+    Cross,
+    Inner,
+    Left,
+    Right,
+    Full,
 }
 
 #[derive(Debug, PartialEq)]

@@ -3,20 +3,20 @@ use crate::sql::executor::executor::{Executor, ResultSet};
 use crate::sql::schema::Table;
 use crate::utils::custom_error::LegendDBResult;
 
-pub struct CreateTable {
+pub struct CreateTableExecutor {
     schema: Table,
 }
 
 // 
-impl CreateTable {
+impl CreateTableExecutor {
     pub fn new(schema: Table) -> Box<Self> {
-        Box::new(CreateTable {
+        Box::new(CreateTableExecutor {
             schema,
         })
     }
 }
 
-impl<T: Transaction> Executor<T> for CreateTable {
+impl<T: Transaction> Executor<T> for CreateTableExecutor {
     fn execute(self: Box<Self>, txn: &mut T) -> LegendDBResult<ResultSet> {
         let table_name = self.schema.name.clone();
         txn.create_table(self.schema)?;
@@ -24,19 +24,19 @@ impl<T: Transaction> Executor<T> for CreateTable {
     }
 }
 
-pub struct DropTable {
+pub struct DropTableExecutor {
     table_name: String,
 }
 
-impl DropTable {
+impl DropTableExecutor {
     pub fn new(table_name: String) -> Box<Self> {
-        Box::new(DropTable {
+        Box::new(Self {
             table_name,
         })
     }
 }
 
-impl<T: Transaction> Executor<T> for DropTable {
+impl<T: Transaction> Executor<T> for DropTableExecutor {
     fn execute(self: Box<Self>, txn: &mut T) -> LegendDBResult<ResultSet> {
         txn.drop_table(&self.table_name)?;
         Ok(ResultSet::DropTable {

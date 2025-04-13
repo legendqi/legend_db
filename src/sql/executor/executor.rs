@@ -1,10 +1,11 @@
 use crate::sql::engine::engine::Transaction;
-use crate::sql::executor::databases::{CreateDataBase, DropDataBase};
-use crate::sql::executor::delete::Delete;
-use crate::sql::executor::insert::Insert;
-use crate::sql::executor::query::{Limit, Offset, Order, Projection, Scan};
-use crate::sql::executor::schema::{CreateTable, DropTable};
-use crate::sql::executor::update::Update;
+use crate::sql::executor::databases::{CreateDataBaseExecutor, DropDataBaseExecutor};
+use crate::sql::executor::delete::DeleteExecutor;
+use crate::sql::executor::insert::InsertExecutor;
+use crate::sql::executor::join::NestLoopJoinExecutor;
+use crate::sql::executor::query::{LimitExecutor, OffsetExecutor, OrderExecutor, ProjectionExecutor, ScanExecutor};
+use crate::sql::executor::schema::{CreateTableExecutor, DropTableExecutor};
+use crate::sql::executor::update::UpdateExecutor;
 use crate::sql::plan::node::Node;
 use crate::sql::types::Row;
 use crate::utils::custom_error::LegendDBResult;
@@ -17,18 +18,19 @@ pub trait Executor<T: Transaction> {
 impl<T: Transaction + 'static> dyn Executor<T> {
     pub fn build(node: Node) -> Box<dyn Executor<T>> {
         match node {
-            Node::CreateTable {schema } => CreateTable::new(schema),
-            Node::Insert {table_name, columns, values} => Insert::new(table_name, columns, values),
-            Node::Scan {table_name, filter} => Scan::new(table_name, filter),
-            Node::Update {table_name, source, columns } => Update::new(table_name, Self::build(*source), columns),
-            Node::Delete {table_name, source} => Delete::new(table_name, Self::build(*source)),
-            Node::CreateDatabase {database_name} => CreateDataBase::new(database_name),
-            Node::DropDatabase {database_name} => DropDataBase::new(database_name),
-            Node::DropTable {table_name} => DropTable::new(table_name),
-            Node::OrderBy {source, order_by} => Order::new(Self::build(*source), order_by),
-            Node::Limit {source, limit} => Limit::new(Self::build(*source), limit),
-            Node::Offset {source, offset} => Offset::new(Self::build(*source), offset),
-            Node::Projection {source, columns} => Projection::new(Self::build(*source), columns),
+            Node::CreateTable {schema } => CreateTableExecutor::new(schema),
+            Node::Insert {table_name, columns, values} => InsertExecutor::new(table_name, columns, values),
+            Node::Scan {table_name, filter} => ScanExecutor::new(table_name, filter),
+            Node::Update {table_name, source, columns } => UpdateExecutor::new(table_name, Self::build(*source), columns),
+            Node::Delete {table_name, source} => DeleteExecutor::new(table_name, Self::build(*source)),
+            Node::CreateDatabase {database_name} => CreateDataBaseExecutor::new(database_name),
+            Node::DropDatabase {database_name} => DropDataBaseExecutor::new(database_name),
+            Node::DropTable {table_name} => DropTableExecutor::new(table_name),
+            Node::OrderBy {source, order_by} => OrderExecutor::new(Self::build(*source), order_by),
+            Node::Limit {source, limit} => LimitExecutor::new(Self::build(*source), limit),
+            Node::Offset {source, offset} => OffsetExecutor::new(Self::build(*source), offset),
+            Node::Projection {source, columns} => ProjectionExecutor::new(Self::build(*source), columns),
+            Node::NestedLoopJoin {left, right} => NestLoopJoinExecutor::new(Self::build(*left), Self::build(*right)),
         }
     }
 }

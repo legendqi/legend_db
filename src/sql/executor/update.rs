@@ -5,15 +5,15 @@ use crate::sql::parser::ast::Expression;
 use crate::sql::types::Value;
 use crate::utils::custom_error::{LegendDBError, LegendDBResult};
 
-pub struct Update<T: Transaction> {
+pub struct UpdateExecutor<T: Transaction> {
     table_name: String,
     source: Box<dyn Executor<T>>,
     columns: BTreeMap<String, Expression>,
 }
 
-impl<T: Transaction> Update<T> {
+impl<T: Transaction> UpdateExecutor<T> {
     pub(crate) fn new(table_name: String, source: Box<dyn Executor<T>>, columns: BTreeMap<String, Expression>) -> Box<Self> {
-        Box::new(Update {
+        Box::new(Self {
             table_name,
             source,
             columns,
@@ -21,7 +21,7 @@ impl<T: Transaction> Update<T> {
     }
 }
 
-impl<T: Transaction> Executor<T> for Update<T> {
+impl<T: Transaction> Executor<T> for UpdateExecutor<T> {
     fn execute(self: Box<Self>, txn: &mut T) -> LegendDBResult<ResultSet> {
         // 执行扫描操作， 获取到扫描的结果
         let mut count = 0;

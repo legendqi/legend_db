@@ -2,21 +2,21 @@ use crate::sql::engine::engine::Transaction;
 use crate::sql::executor::executor::{Executor, ResultSet};
 use crate::utils::custom_error::{LegendDBError, LegendDBResult};
 
-pub struct Delete<T: Transaction> {
+pub struct DeleteExecutor<T: Transaction> {
     table_name: String,
     source: Box<dyn Executor<T>>,
 }
 
-impl<T: Transaction> Delete<T>  {
+impl<T: Transaction> DeleteExecutor<T>  {
     pub fn new(table_name: String, source: Box<dyn Executor<T>>) -> Box<Self> {
-        Box::new(Delete {
+        Box::new(Self {
             table_name,
             source,
         })
     }
 }
 
-impl<T: Transaction>  Executor<T> for Delete<T> {
+impl<T: Transaction>  Executor<T> for DeleteExecutor<T> {
     fn execute(self: Box<Self>, txn: &mut T) -> LegendDBResult<ResultSet> {
         let mut count = 0;
         match self.source.execute(txn)? { 

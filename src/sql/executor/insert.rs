@@ -7,15 +7,15 @@ use crate::sql::types::{Row, Value};
 use crate::sql::types::DataType::Null;
 use crate::utils::custom_error::{LegendDBError, LegendDBResult};
 
-pub struct Insert {
+pub struct InsertExecutor {
     table_name: String,
     columns: Vec<String>,
     values: Vec<Vec<Expression>>,
 }
 
-impl Insert {
+impl InsertExecutor {
     pub fn new(table_name: String, columns: Vec<String>, values: Vec<Vec<Expression>>) -> Box<Self> {
-        Box::new(Insert {
+        Box::new(Self {
             table_name,
             columns,
             values,
@@ -68,7 +68,7 @@ fn make_row(table: &Table, columns: &Vec<String>, values: &Row) -> LegendDBResul
     Ok(inputs.values().cloned().collect::<Vec<_>>())
 }
 
-impl<T: Transaction> Executor<T> for Insert {
+impl<T: Transaction> Executor<T> for InsertExecutor {
 
     fn execute(self: Box<Self>, txn: &mut T) -> LegendDBResult<ResultSet> {
         let mut count = 0;

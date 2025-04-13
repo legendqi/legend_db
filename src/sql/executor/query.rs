@@ -5,21 +5,21 @@ use crate::sql::executor::executor::{Executor, ResultSet};
 use crate::sql::parser::ast::{Expression, OrderDirection};
 use crate::utils::custom_error::{LegendDBError, LegendDBResult};
 
-pub struct Scan {
+pub struct ScanExecutor {
     table_name: String,
     filter: Option<BTreeMap<String, Expression>>
 }
 
-impl Scan {
+impl ScanExecutor {
     pub fn new(table_name: String, filter: Option<BTreeMap<String, Expression>>) -> Box<Self> {
-        Box::new(Scan {
+        Box::new(Self {
             table_name,
             filter
         })
     }
 }
 
-impl<T: Transaction> Executor<T> for Scan {
+impl<T: Transaction> Executor<T> for ScanExecutor {
     fn execute(self: Box<Self>, txn: &mut T) -> LegendDBResult<ResultSet> {
         let table = txn.get_table_must(self.table_name.clone())?;
         let rows = txn.scan_table(self.table_name.clone(), self.filter)?;
@@ -33,12 +33,12 @@ impl<T: Transaction> Executor<T> for Scan {
 
 
 // 排序
-pub struct Order<T: Transaction> {
+pub struct OrderExecutor<T: Transaction> {
     source: Box<dyn Executor<T>>,
     order_by: Vec<(String, OrderDirection)>,
 }
 
-impl<T: Transaction> Order<T> {
+impl<T: Transaction> OrderExecutor<T> {
     pub(crate) fn new(source: Box<dyn Executor<T>>, order_by: Vec<(String, OrderDirection)>) -> Box<Self> {
         Box::new(
             Self {
@@ -49,7 +49,7 @@ impl<T: Transaction> Order<T> {
     }
 }
 
-impl<T: Transaction> Executor<T> for Order<T> {
+impl<T: Transaction> Executor<T> for OrderExecutor<T> {
     fn execute(self: Box<Self>, txn: &mut T) -> LegendDBResult<ResultSet> {
         match self.source.execute(txn)? { 
             ResultSet::Scan { columns, mut rows} => {
@@ -86,12 +86,12 @@ impl<T: Transaction> Executor<T> for Order<T> {
 
 
 // Limit
-pub struct Limit<T: Transaction> {
+pub struct LimitExecutor<T: Transaction> {
     source: Box<dyn Executor<T>>,
     limit: usize,
 }
 
-impl<T: Transaction> Limit<T> {
+impl<T: Transaction> LimitExecutor<T> {
     pub(crate) fn new(source: Box<dyn Executor<T>>, limit: usize) -> Box<Self> {
         Box::new(
             Self {
@@ -102,7 +102,7 @@ impl<T: Transaction> Limit<T> {
     }
 }
 
-impl<T: Transaction> Executor<T> for Limit<T> {
+impl<T: Transaction> Executor<T> for LimitExecutor<T> {
     fn execute(self: Box<Self>, txn: &mut T) -> LegendDBResult<ResultSet> {
         match self.source.execute(txn)? {
             ResultSet::Scan { columns, mut rows} => {
@@ -119,12 +119,12 @@ impl<T: Transaction> Executor<T> for Limit<T> {
     }
 }
 
-pub struct Offset<T: Transaction> {
+pub struct OffsetExecutor<T: Transaction> {
     source: Box<dyn Executor<T>>,
     offset: usize,
 }
 
-impl<T: Transaction> Offset<T> {
+impl<T: Transaction> OffsetExecutor<T> {
     pub(crate) fn new(source: Box<dyn Executor<T>>, offset: usize) -> Box<Self> {
         Box::new(
             Self {
@@ -135,7 +135,7 @@ impl<T: Transaction> Offset<T> {
     }
 }
 
-impl<T: Transaction> Executor<T> for Offset<T> {
+impl<T: Transaction> Executor<T> for OffsetExecutor<T> {
     fn execute(self: Box<Self>, txn: &mut T) -> LegendDBResult<ResultSet> {
         match self.source.execute(txn)? {
             ResultSet::Scan { columns, mut rows} => {
@@ -159,12 +159,12 @@ impl<T: Transaction> Executor<T> for Offset<T> {
 }
 
 
-pub struct Projection<T: Transaction> {
+pub struct ProjectionExecutor<T: Transaction> {
     source: Box<dyn Executor<T>>,
     columns: Vec<(Expression, Option<String>)>,
 }
 
-impl<T: Transaction> Projection<T> {
+impl<T: Transaction> ProjectionExecutor<T> {
     pub fn new(source: Box<dyn Executor<T>>, columns: Vec<(Expression, Option<String>)>) -> Box<Self> {
         Box::new(
             Self {
@@ -175,7 +175,7 @@ impl<T: Transaction> Projection<T> {
     }
 }
 
-impl<T: Transaction> Executor<T> for Projection<T> {
+impl<T: Transaction> Executor<T> for ProjectionExecutor<T> {
     fn execute(self: Box<Self>, txn: &mut T) -> LegendDBResult<ResultSet> {
         match self.source.execute(txn)? {
             ResultSet::Scan { columns, rows} => {

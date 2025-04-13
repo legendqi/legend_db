@@ -1,4 +1,4 @@
-use crate::sql::parser::ast::{Statement};
+use crate::sql::parser::ast::{FromItem, JoinType, Statement};
 use crate::sql::plan::node::{Node, Plan};
 use crate::sql::schema::{Column, Table};
 use crate::sql::types::Value;
@@ -46,11 +46,9 @@ impl Planner {
                         values
                     }
                 },
-                Statement::Select {columns, table_name, order_by, limit, offset } => {
-                    let mut scan_node = Node::Scan {
-                        table_name,
-                        filter: None,
-                    };
+                Statement::Select {columns, from, order_by, limit, offset } => {
+                    let mut scan_node = self.build_from_item(from)?;
+                    
                     if order_by.len() > 0 {
                         scan_node = Node::OrderBy {
                             source: Box::new(scan_node),
@@ -123,5 +121,31 @@ impl Planner {
                 },
             }
         )
+    }
+    
+    pub fn build_from_item(&self, from_item: FromItem) -> LegendDBResult<Node> {
+        match from_item { 
+            FromItem::Table { name, alias } => {
+                return Ok(Node::Scan {
+                    table_name: name,
+                    filter: None,
+                });
+            },
+            FromItem::Join { left, right, join_type} => {
+                match join_type { 
+                    JoinType::Cross => {
+                        return Ok(Node::NestedLoopJoin {
+                            left: Box::new(self.build_from_item(*left)?),
+                            right: Box::new(self.build_from_item(*right)?),
+                        })
+                    },
+                    JoinType::Inner => {},
+                    JoinType::Left => {},
+                    JoinType::Right => {},
+                    JoinType::Full => {},
+                }
+            }
+        }
+        todo!()
     }
 }

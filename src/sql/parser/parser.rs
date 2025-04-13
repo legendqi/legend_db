@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 use std::iter::Peekable;
-use crate::sql::parser::ast::{Column, Consts, Expression, OrderDirection, Statement};
+use crate::sql::parser::ast::{Column, Consts, Expression, FromItem, JoinType, OrderDirection, Statement};
 use crate::sql::parser::ast::Statement::Select;
 use crate::sql::parser::lexer::{Keyword, Lexer, Token};
 use crate::sql::types::DataType;
@@ -93,7 +93,7 @@ impl<'a> Parser<'a> {
         let table_name = self.next_ident()?;
         Ok(Select {
             columns,
-            table_name,
+            from: self.parse_from()?,
             order_by: self.parse_order_by()?,
             limit: {
                 if self.next_if_token(Token::Keyword(Keyword::Limit)).is_some() {
@@ -356,6 +356,48 @@ impl<'a> Parser<'a> {
         Ok(columns)
     }
 
+    // 解析from相关，包含join
+    fn parse_from(&mut self) -> LegendDBResult<FromItem> {
+        self.next_expect(Token::Keyword(Keyword::From))?;
+        // 第一个表名
+        let mut first_item = self.parse_from_table()?;
+        // 是否有join
+        while let Some(join_type) = self.parser_from_join()?{
+            let left = Box::new(first_item.clone());
+            let right = Box::new(self.parse_from_table()?);
+            first_item = FromItem::Join {
+                left,
+                right,
+                join_type,
+            }
+        }
+        Ok(first_item)
+    }
+
+    fn parse_from_table(&mut self) -> LegendDBResult<FromItem> {
+        self.next_expect(Token::Keyword(Keyword::Table))?;
+        let table_name = self.next_ident()?;
+        // 判断是否有别名
+        let alias = match self.next_if_token(Token::Keyword(Keyword::As)) {
+            Some(_) => {
+                Some(self.next_ident()?)
+            },
+            None => None
+        };
+        // 解析字段
+        Ok(FromItem::Table {name: self.next_ident()?, alias})
+    }
+
+    fn parser_from_join(&mut self) -> LegendDBResult<Option<JoinType>> {
+        // 是否是cross join
+        if self.next_if_token(Token::Keyword(Keyword::Cross)).is_some() {
+            self.next_expect(Token::Keyword(Keyword::Join))?;
+            return Ok(Some(JoinType::Cross));
+        }
+        Ok(None)
+    }
+
+    // 解析创建数据库
     fn parse_create_database(&mut self) -> LegendDBResult<Statement> {
         Ok(Statement::CreateDatabase {
             database_name: self.next_ident()?,

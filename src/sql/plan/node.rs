@@ -56,6 +56,12 @@ pub enum Node {
         source: Box<Node>,
         columns: Vec<(Expression, Option<String>)>,
     },
+    
+    // 嵌套循环 Join 节点
+    NestedLoopJoin {
+        left: Box<Node>,
+        right: Box<Node>,
+    },
     CreateDatabase {
         database_name: String,
     },

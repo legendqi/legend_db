@@ -2,20 +2,20 @@ use crate::sql::engine::engine::Transaction;
 use crate::sql::executor::executor::{Executor, ResultSet};
 use crate::utils::custom_error::LegendDBResult;
 
-pub struct CreateDataBase {
+pub struct CreateDataBaseExecutor {
     pub database_name: String,
 }
 
-impl CreateDataBase {
+impl CreateDataBaseExecutor {
     pub fn new(database_name: String) -> Box<Self> {
-        Box::new(CreateDataBase {
+        Box::new(Self {
             database_name
         }
     )
     }
 }
 
-impl<T: Transaction> Executor<T> for CreateDataBase {
+impl<T: Transaction> Executor<T> for CreateDataBaseExecutor {
     fn execute(self: Box<Self>, txn: &mut T) -> LegendDBResult<ResultSet> {
         txn.create_database(&*self.database_name.clone())?;
         Ok(ResultSet::CreateDatabase {
@@ -24,20 +24,20 @@ impl<T: Transaction> Executor<T> for CreateDataBase {
     }
 }
 
-pub struct DropDataBase {
+pub struct DropDataBaseExecutor {
     pub database_name: String,
 }
 
-impl DropDataBase {
+impl DropDataBaseExecutor {
     pub fn new(database_name: String) -> Box<Self> {
-        Box::new(DropDataBase {
+        Box::new(Self {
             database_name
         }
     )
     }
 }
 
-impl<T: Transaction> Executor<T> for DropDataBase {
+impl<T: Transaction> Executor<T> for DropDataBaseExecutor {
     fn execute(self: Box<Self>, txn: &mut T) -> LegendDBResult<ResultSet> {
         txn.drop_database(&*self.database_name.clone())?;
         Ok(ResultSet::DropDatabase {
