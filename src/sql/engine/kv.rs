@@ -243,6 +243,7 @@ impl KeyPrefix {
 mod tests {
     use crate::sql::engine::engine::Engine;
     use crate::sql::executor::executor::ResultSet;
+    use crate::sql::storage::disk::DiskEngine;
     use super::KVEngine;
     use crate::sql::storage::memory::MemoryEngine;
     use crate::utils::custom_error::LegendDBResult;
@@ -293,6 +294,38 @@ mod tests {
             }
             _ => unreachable!()
         }
+        Ok(())
+    }
+    
+    #[test]
+    fn test_select() -> LegendDBResult<()> {
+        let p = tempfile::tempdir()?.into_path().join("test.db");
+        let kv_engine = KVEngine::new(DiskEngine::new(p.clone())?);
+        let mut s = kv_engine.session()?;
+        s.execute(
+            "create table t3 (
+                     a int primary key,
+                     b int default 12 null,
+                     c integer default 0 NULL,
+                     d float not NULL
+                 );",
+        )?;
+        s.execute("insert into t3 values (1, 34, 22, 1.22);")?;
+        s.execute("insert into t3 values (4, 23, 65, 4.23);")?;
+        s.execute("insert into t3 values (3, 56, 22, 2.88);")?;
+        s.execute("insert into t3 values (2, 87, 57, 6.78);")?;
+        s.execute("insert into t3 values (5, 87, 14, 3.28);")?;
+        s.execute("insert into t3 values (7, 87, 82, 9.52);")?;
+
+        match s.execute("select a, b as col2 from t3 order by c, a desc limit 100;")? {
+            ResultSet::Scan { columns, rows } => {
+                assert_eq!(2, columns.len());
+                assert_eq!(6, rows.len());
+            }
+            _ => unreachable!(),
+        }
+
+        std::fs::remove_dir_all(p.parent().unwrap())?;
         Ok(())
     }
 }

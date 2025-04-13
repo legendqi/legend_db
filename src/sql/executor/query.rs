@@ -157,3 +157,51 @@ impl<T: Transaction> Executor<T> for Offset<T> {
         }
     }
 }
+
+
+pub struct Projection<T: Transaction> {
+    source: Box<dyn Executor<T>>,
+    columns: Vec<(Expression, Option<String>)>,
+}
+
+impl<T: Transaction> Projection<T> {
+    pub fn new(source: Box<dyn Executor<T>>, columns: Vec<(Expression, Option<String>)>) -> Box<Self> {
+        Box::new(
+            Self {
+                source,
+                columns,
+            }
+        )
+    }
+}
+
+impl<T: Transaction> Executor<T> for Projection<T> {
+    fn execute(self: Box<Self>, txn: &mut T) -> LegendDBResult<ResultSet> {
+        match self.source.execute(txn)? {
+            ResultSet::Scan { columns, rows} => {
+                let mut selected_columns = Vec::new();
+                let mut new_columns = Vec::new();
+                for (col, alias) in self.columns {
+                    if let Expression::Field(col_name) = col {
+                        let pos = match columns.iter().position(|c| *c == col_name) {
+                            Some(pos) => pos,
+                            None => return Err(LegendDBError::Internal(format!("Column {} not found in table", col_name)))
+                        };
+                        selected_columns.push(pos);
+                        new_columns.push(if alias.is_some() { alias.clone().unwrap() } else { col_name });
+                    }
+                }
+                let mut new_row = Vec::new();
+                for row in rows.into_iter() {
+                    let mut new_columns = Vec::new();
+                    for i in selected_columns.iter() {
+                        new_columns.push(row[*i].clone())
+                    }
+                    new_row.push(new_columns);
+                }
+                Ok(ResultSet::Scan { columns: new_columns, rows: new_row })
+            },
+            _ => Err(LegendDBError::Internal("Unexpected result set".into()))
+        }
+    }
+}

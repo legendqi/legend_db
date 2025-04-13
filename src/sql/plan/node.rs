@@ -51,6 +51,11 @@ pub enum Node {
         source: Box<Node>,
         offset: usize,
     },
+    // 投影节点，也就是查询指定列并取别名
+    Projection {
+        source: Box<Node>,
+        columns: Vec<(Expression, Option<String>)>,
+    },
     CreateDatabase {
         database_name: String,
     },

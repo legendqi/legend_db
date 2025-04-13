@@ -99,9 +99,6 @@ impl Engine for DiskEngine {
         }
     }
     
-    fn scan_prefix(&mut self, prefix: Vec<u8>) -> Self::EngineIterator<'_> {
-        todo!()
-    }
 }
 
 pub struct DiskEngineIterator<'a> {

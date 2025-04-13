@@ -2,7 +2,7 @@ use crate::sql::engine::engine::Transaction;
 use crate::sql::executor::databases::{CreateDataBase, DropDataBase};
 use crate::sql::executor::delete::Delete;
 use crate::sql::executor::insert::Insert;
-use crate::sql::executor::query::{Limit, Offset, Order, Scan};
+use crate::sql::executor::query::{Limit, Offset, Order, Projection, Scan};
 use crate::sql::executor::schema::{CreateTable, DropTable};
 use crate::sql::executor::update::Update;
 use crate::sql::plan::node::Node;
@@ -28,6 +28,7 @@ impl<T: Transaction + 'static> dyn Executor<T> {
             Node::OrderBy {source, order_by} => Order::new(Self::build(*source), order_by),
             Node::Limit {source, limit} => Limit::new(Self::build(*source), limit),
             Node::Offset {source, offset} => Offset::new(Self::build(*source), offset),
+            Node::Projection {source, columns} => Projection::new(Self::build(*source), columns),
         }
     }
 }

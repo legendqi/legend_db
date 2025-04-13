@@ -46,7 +46,7 @@ impl Planner {
                         values
                     }
                 },
-                Statement::Select {table_name, order_by, limit, offset } => {
+                Statement::Select {columns, table_name, order_by, limit, offset } => {
                     let mut scan_node = Node::Scan {
                         table_name,
                         filter: None,
@@ -67,7 +67,7 @@ impl Planner {
                             },
                         }
                     };
-
+                    // Limit 要在Offset 之后解析
                     if let Some(limit) = limit {
                         scan_node = Node::Limit {
                             source: Box::new(scan_node),
@@ -77,6 +77,14 @@ impl Planner {
                             },
                         }
                     };
+                    
+                    // Projection
+                    if !columns.is_empty() {
+                        scan_node = Node::Projection {
+                            source: Box::new(scan_node),
+                            columns
+                        }
+                    }
                     scan_node
                 }
                 Statement::Delete { table_name, where_clause } => {

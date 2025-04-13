@@ -8,8 +8,8 @@ pub enum Statement {
     Insert { table_name: String, columns: Option<Vec<String>>, values: Vec<Vec<Expression>> },
     Update { table_name: String, columns: BTreeMap<String, Expression>, where_clause: Option<BTreeMap<String, Expression>> },
     Delete { table_name: String, where_clause: Option<BTreeMap<String, Expression>> },
-    // Select { table_name: String, column: Column, order_by: Vec<(String, OrderDirection)> },
-    Select { table_name: String, order_by: Vec<(String, OrderDirection)>, limit: Option<Expression>, offset: Option<Expression> },
+    // 别名可有可无
+    Select { columns: Vec<(Expression, Option<String>)>, table_name: String, order_by: Vec<(String, OrderDirection)>, limit: Option<Expression>, offset: Option<Expression> },
     DropTable { table_name: String },
     DropDatabase { database_name: String },
 }
@@ -33,6 +33,7 @@ pub struct Column {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
+    Field(String),
     Consts(Consts),
 }
 

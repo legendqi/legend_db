@@ -3,7 +3,7 @@ pub mod memory;
 pub mod mvcc;
 
 #[allow(unused)]
-mod disk;
+pub mod disk;
 mod b_plus_tree;
 #[allow(unused)]
 pub mod keycode;
