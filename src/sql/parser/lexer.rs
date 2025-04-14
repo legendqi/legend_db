@@ -54,6 +54,7 @@ pub enum Keyword {
     Join,
     Left,
     Right,
+    On
 }
 
 impl Keyword {
@@ -105,6 +106,7 @@ impl Keyword {
             "JOIN" => Some(Keyword::Join),
             "LEFT" => Some(Keyword::Left),
             "RIGHT" => Some(Keyword::Right),
+            "ON" => Some(Keyword::On),
             _ => None,
         }
     }
@@ -157,6 +159,7 @@ impl Keyword {
             Keyword::Join => "JOIN",
             Keyword::Left => "LEFT",
             Keyword::Right => "RIGHT",
+            Keyword::On => "ON",
         }
     }
 }

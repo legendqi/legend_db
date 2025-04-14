@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 use std::iter::Peekable;
-use crate::sql::parser::ast::{Column, Consts, Expression, FromItem, JoinType, OrderDirection, Statement};
+use crate::sql::parser::ast::{Column, Consts, Expression, FromItem, JoinType, Operation, OrderDirection, Statement};
 use crate::sql::parser::ast::Statement::Select;
 use crate::sql::parser::lexer::{Keyword, Lexer, Token};
 use crate::sql::types::DataType;
@@ -362,10 +362,33 @@ impl<'a> Parser<'a> {
         while let Some(join_type) = self.parser_from_join()?{
             let left = Box::new(first_item.clone());
             let right = Box::new(self.parse_from_table()?);
+            // 解析 join类型
+            let predicate = match join_type {
+                JoinType::Cross => None,
+                _ => {
+                    self.next_expect(Token::Keyword(Keyword::On))?;
+                    let left_expr = self.parse_expression()?;
+                    self.next_expect(Token::Equal)?;
+                    let right_expr = self.parse_expression()?;
+                    // 右连接，左表为右表， 右连接，右表为左表
+                    let (left_expr, right_expr) = match join_type { 
+                        JoinType::Right => {
+                            (right_expr, left_expr)
+                        }
+                        _ => {
+                            (left_expr, right_expr)
+                        }
+                    };
+                    // 构建条件 左表中的一列等于右表中的一列
+                    let cond = Operation::Equal(Box::new(left_expr), Box::new(right_expr));
+                    Some(Expression::Operation(cond))
+                }
+            };
             first_item = FromItem::Join {
                 left,
                 right,
                 join_type,
+                predicate,
             }
         }
         Ok(first_item)
@@ -387,7 +410,15 @@ impl<'a> Parser<'a> {
         // 是否是cross join
         if self.next_if_token(Token::Keyword(Keyword::Cross)).is_some() {
             self.next_expect(Token::Keyword(Keyword::Join))?;
-            return Ok(Some(JoinType::Cross));
+            return Ok(Some(JoinType::Cross)); // 返回cross join
+        } else if self.next_if_token(Token::Keyword(Keyword::Join)).is_some() {
+            return Ok(Some(JoinType::Inner)); // 返回inner join
+        } else if self.next_if_token(Token::Keyword(Keyword::Left)).is_some() {
+            self.next_expect(Token::Keyword(Keyword::Join))?;
+            return Ok(Some(JoinType::Left)); // 返回left join
+        } else if self.next_if_token(Token::Keyword(Keyword::Right)).is_some() {
+            self.next_expect(Token::Keyword(Keyword::Join))?;
+            return Ok(Some(JoinType::Right)); // 返回right join
         }
         Ok(None)
     }

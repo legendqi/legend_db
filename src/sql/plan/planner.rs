@@ -124,28 +124,29 @@ impl Planner {
     }
     
     pub fn build_from_item(&self, from_item: FromItem) -> LegendDBResult<Node> {
-        match from_item { 
-            FromItem::Table { name, alias } => {
-                return Ok(Node::Scan {
+        Ok(match from_item { 
+            FromItem::Table { name, alias: _ } => {
+                Node::Scan {
                     table_name: name,
                     filter: None,
-                });
+                }
             },
-            FromItem::Join { left, right, join_type} => {
-                match join_type { 
-                    JoinType::Cross => {
-                        return Ok(Node::NestedLoopJoin {
-                            left: Box::new(self.build_from_item(*left)?),
-                            right: Box::new(self.build_from_item(*right)?),
-                        })
-                    },
-                    JoinType::Inner => {},
-                    JoinType::Left => {},
-                    JoinType::Right => {},
-                    JoinType::Full => {},
+            FromItem::Join { left, right, join_type, predicate} => {
+                let (left, right) = match join_type { 
+                    JoinType::Right => (right, left),
+                    _ => (left, right),
+                };
+                let outer = match join_type { 
+                    JoinType::Inner | JoinType::Cross => false,
+                    _ => true,
+                };
+                Node::NestedLoopJoin {
+                    left: Box::new(self.build_from_item(*left)?),
+                    right: Box::new(self.build_from_item(*right)?),
+                    predicate,
+                    outer,
                 }
             }
-        }
-        todo!()
+        })
     }
 }
