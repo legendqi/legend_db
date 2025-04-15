@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, HashMap};
 use crate::sql::engine::engine::Transaction;
 use crate::sql::executor::executor::{Executor, ResultSet};
 use crate::sql::parser::ast::{Expression, OrderDirection};
-use crate::utils::custom_error::{LegendDBError, LegendDBResult};
+use crate::custom_error::{LegendDBError, LegendDBResult};
 
 pub struct ScanExecutor {
     table_name: String,

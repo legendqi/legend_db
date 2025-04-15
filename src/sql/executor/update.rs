@@ -3,7 +3,7 @@ use crate::sql::engine::engine::Transaction;
 use crate::sql::executor::executor::{Executor, ResultSet};
 use crate::sql::parser::ast::Expression;
 use crate::sql::types::Value;
-use crate::utils::custom_error::{LegendDBError, LegendDBResult};
+use crate::custom_error::{LegendDBError, LegendDBResult};
 
 pub struct UpdateExecutor<T: Transaction> {
     table_name: String,

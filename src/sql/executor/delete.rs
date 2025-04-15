@@ -1,6 +1,6 @@
 use crate::sql::engine::engine::Transaction;
 use crate::sql::executor::executor::{Executor, ResultSet};
-use crate::utils::custom_error::{LegendDBError, LegendDBResult};
+use crate::custom_error::{LegendDBError, LegendDBResult};
 
 pub struct DeleteExecutor<T: Transaction> {
     table_name: String,

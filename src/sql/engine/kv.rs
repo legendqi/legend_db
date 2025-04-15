@@ -4,12 +4,12 @@ use serde::{Deserialize, Serialize};
 use crate::sql::engine::engine::{Engine, Session, Transaction};
 use crate::sql::parser::ast::Expression;
 use crate::sql::schema::Table;
-use crate::sql::storage;
-use crate::sql::storage::engine::Engine as StorageEngine;
-use crate::sql::storage::keycode::{deserializer, serializer};
-use crate::sql::storage::mvcc::{MvccTransaction};
+use crate::storage;
+use crate::storage::engine::Engine as StorageEngine;
+use crate::storage::keycode::{deserializer, serializer};
+use crate::storage::mvcc::{MvccTransaction};
 use crate::sql::types::{Row, Value};
-use crate::utils::custom_error::{LegendDBError, LegendDBResult};
+use crate::custom_error::{LegendDBError, LegendDBResult};
 // KV引擎定义
 #[derive(Debug)]
 pub struct KVEngine<E: StorageEngine> {
@@ -164,6 +164,17 @@ impl<E: StorageEngine> Transaction for KVTransaction<E> {
     }
 
 
+    fn get_table_names(&mut self) -> LegendDBResult<Vec<String>> {
+        let prefix = KeyPrefix::Table.encode()?;
+        let results = self.txn.scan_prefix(prefix)?;
+        let mut names = Vec::new();
+        for result in results {
+            let (table, _): (Table, usize) = bincode::decode_from_slice(&result.value, config::standard())?;
+            names.push(table.name);
+        }
+        Ok(names)
+    }
+
     fn scan_table(&mut self, table_name: String, filter: Option<BTreeMap<String, Expression>>) -> LegendDBResult<Vec<Row>> {
         let table = self.get_table_must(table_name.clone())?;
         let prefix = KeyPrefix::Row(table_name.clone()).encode()?;
@@ -243,10 +254,10 @@ impl KeyPrefix {
 mod tests {
     use crate::sql::engine::engine::Engine;
     use crate::sql::executor::executor::ResultSet;
-    use crate::sql::storage::disk::DiskEngine;
+    use crate::storage::disk::DiskEngine;
     use super::KVEngine;
-    use crate::sql::storage::memory::MemoryEngine;
-    use crate::utils::custom_error::LegendDBResult;
+    use crate::storage::memory::MemoryEngine;
+    use crate::custom_error::LegendDBResult;
 
     #[test]
     fn test_create_table() -> LegendDBResult<()> {

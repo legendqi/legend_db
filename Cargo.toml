@@ -11,6 +11,11 @@ serde_bytes = "0.11.15"
 fs4 = "0.11.1"
 cargo-deb = "2.8.0"
 tempfile = "3.14.0"
+futures = "0.3.31"
+tokio = { version = "1.41.1", features = ["full"] }
+tokio-stream = "0.1.16"
+tokio-util = {version = "0.7.12", features = ["full"]}
+rustyline = "14.0.0"
 # 后期考虑使用rkyv，提升效率
 #rkyv = {version = "0.8.8", features = ["alloc", "std"]}
 #rkyv_derive = "0.8.8"

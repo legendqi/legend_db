@@ -2,9 +2,9 @@ use std::collections::{BTreeMap, HashSet};
 use std::sync::{Arc, Mutex, MutexGuard};
 use bincode::{config, Decode, Encode};
 use serde::{Deserialize, Serialize};
-use crate::sql::storage::engine::Engine;
-use crate::sql::storage::keycode::{deserializer, serializer};
-use crate::utils::custom_error::{LegendDBError, LegendDBResult};
+use crate::storage::engine::Engine;
+use crate::storage::keycode::{deserializer, serializer};
+use crate::custom_error::{LegendDBError, LegendDBResult};
 
 #[derive(Debug)]
 pub struct Mvcc<E: Engine> {
@@ -347,11 +347,11 @@ pub struct ScanResult {
 
 #[cfg(test)]
 mod tests {
-    use crate::sql::storage::disk::DiskEngine;
-    use crate::sql::storage::engine::Engine;
-    use crate::sql::storage::memory::MemoryEngine;
-    use crate::sql::storage::mvcc::Mvcc;
-    use crate::utils::custom_error::{LegendDBResult};
+    use crate::storage::disk::DiskEngine;
+    use crate::storage::engine::Engine;
+    use crate::storage::memory::MemoryEngine;
+    use crate::storage::mvcc::Mvcc;
+    use crate::custom_error::{LegendDBResult};
 
     // 1. Get
     fn get(eng: impl Engine) -> LegendDBResult<()> {

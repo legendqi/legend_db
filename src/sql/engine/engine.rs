@@ -5,7 +5,7 @@ use crate::sql::parser::parser::Parser;
 use crate::sql::plan::node::Plan;
 use crate::sql::schema::Table;
 use crate::sql::types::{Row, Value};
-use crate::utils::custom_error::{LegendDBError, LegendDBResult};
+use crate::custom_error::{LegendDBError, LegendDBResult};
 
 // 抽象的SQL引擎层定义，目前只有一个KVEngine
 pub trait Engine: Clone{
@@ -58,6 +58,9 @@ pub trait Transaction {
 
     //获取表信息
     fn get_table(&self, table: String) -> LegendDBResult<Option<Table>>;
+
+    // 获取所有的表名
+    fn get_table_names(&mut self) -> LegendDBResult<Vec<String>>;
     // 获取表信息，不存在则报错
     fn get_table_must(&self, table: String) -> LegendDBResult<Table> {
         self.get_table(table.clone())?

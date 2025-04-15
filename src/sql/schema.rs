@@ -1,7 +1,7 @@
 use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use crate::sql::types::{DataType, Row, Value};
-use crate::utils::custom_error::{LegendDBError, LegendDBResult};
+use crate::custom_error::{LegendDBError, LegendDBResult};
 
 #[derive(Serialize, Deserialize, Encode, Decode, Debug, PartialEq)]
 

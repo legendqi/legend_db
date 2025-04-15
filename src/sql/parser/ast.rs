@@ -57,15 +57,19 @@ pub struct Column {
     pub unique: bool,
 }
 
+// join 的表达式，只有一种等于的情况
 #[derive(Debug, PartialEq, Clone)]
 pub enum Operation {
     Equal(Box<Expression>, Box<Expression>)
 }
+
+// 表达式
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expression {
     Field(String),
     Consts(Consts),
-    Operation(Operation)
+    Operation(Operation),
+    Function(String, String)
 }
 
 impl From<Consts> for Expression {

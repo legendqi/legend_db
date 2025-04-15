@@ -4,7 +4,7 @@
 use std::fmt::{Display, Formatter};
 use std::iter::Peekable;
 use std::str::Chars;
-use crate::utils::custom_error::{LegendDBError, LegendDBResult};
+use crate::custom_error::{LegendDBError, LegendDBResult};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Keyword {
@@ -441,7 +441,7 @@ mod tests {
     use crate::{
         sql::parser::lexer::{Keyword, Token},
     };
-    use crate::utils::custom_error::LegendDBResult;
+    use crate::custom_error::LegendDBResult;
 
     #[test]
     fn test_lexer_create_table() -> LegendDBResult<()> {

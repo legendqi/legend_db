@@ -1,7 +1,7 @@
 use std::fmt::Display;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::{DeserializeSeed, EnumAccess, IntoDeserializer, SeqAccess, VariantAccess, Visitor};
-use crate::utils::custom_error::{LegendDBError, LegendDBResult};
+use crate::custom_error::{LegendDBError, LegendDBResult};
 
 pub fn serializer<T: serde::ser::Serialize>(key: &T) -> LegendDBResult<Vec<u8>> {
     let mut serializer = KeyCodeSerializer {
@@ -579,8 +579,8 @@ impl<'de, 'a> Deserializer<'de> for & mut KeyCodeDeserializer<'de>  {
 
 #[cfg(test)]
 mod tests {
-    use crate::sql::storage::keycode::serializer;
-    use crate::sql::storage::mvcc::MvccKey;
+    use crate::storage::keycode::serializer;
+    use crate::storage::mvcc::MvccKey;
 
     #[test]
     fn test_encode() {

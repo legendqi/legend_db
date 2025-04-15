@@ -4,7 +4,7 @@ use crate::sql::parser::ast::{Column, Consts, Expression, FromItem, JoinType, Op
 use crate::sql::parser::ast::Statement::Select;
 use crate::sql::parser::lexer::{Keyword, Lexer, Token};
 use crate::sql::types::DataType;
-use crate::utils::custom_error::{LegendDBError, LegendDBResult};
+use crate::custom_error::{LegendDBError, LegendDBResult};
 
 pub struct Parser<'a> {
     lexer: Peekable<Lexer<'a>>
@@ -255,7 +255,19 @@ impl<'a> Parser<'a> {
     fn parse_expression(&mut self) -> LegendDBResult<Expression> {
         Ok(match self.custom_next()? {
             Token::Identifier(ident) => {
-                Expression::Field(ident)
+                // 解析函数
+                if self.next_if_token(Token::LeftParen).is_some() {
+                    // 取出列名
+                    let col_name = self.next_ident()?;
+                    if self.next_if_token(Token::RightParen).is_none() {
+                        return Err(LegendDBError::Parser(format!("[Parser] Unexpected token: {:?}", self.custom_next()?)));
+                    }
+                    Expression::Function(ident.clone(), col_name)
+                    // 解析函数
+                } else {
+                    // 解析列名
+                    Expression::Field(ident)
+                }
             },
             Token::Number(n) => {
                 if n.chars().all(|c| c.is_ascii_digit()) {
@@ -506,7 +518,7 @@ mod tests {
 use std::collections::BTreeMap;
     use crate::{sql::parser::ast};
     use crate::sql::parser::ast::{Statement};
-    use crate::utils::custom_error::LegendDBResult;
+    use crate::custom_error::LegendDBResult;
     use super::Parser;
 
     #[test]

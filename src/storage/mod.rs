@@ -8,7 +8,7 @@ mod b_plus_tree;
 #[allow(unused)]
 pub mod keycode;
 
-use crate::utils::custom_error::LegendDBResult;
+use crate::custom_error::LegendDBResult;
 
 #[allow(unused)]
 #[derive(Debug, Clone)]

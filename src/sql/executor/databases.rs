@@ -1,6 +1,6 @@
 use crate::sql::engine::engine::Transaction;
 use crate::sql::executor::executor::{Executor, ResultSet};
-use crate::utils::custom_error::LegendDBResult;
+use crate::custom_error::LegendDBResult;
 
 pub struct CreateDataBaseExecutor {
     pub database_name: String,

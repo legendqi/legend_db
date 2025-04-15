@@ -4,7 +4,7 @@ use crate::sql::parser::ast::{Expression, OrderDirection, Statement};
 use crate::sql::executor::executor::{Executor, ResultSet};
 use crate::sql::plan::planner::Planner;
 use crate::sql::schema::Table;
-use crate::utils::custom_error::LegendDBResult;
+use crate::custom_error::LegendDBResult;
 
 #[derive(Debug, PartialEq)]
 pub enum Node {
@@ -99,7 +99,7 @@ mod tests {
     };
     use crate::sql::parser::parser::Parser;
     use crate::sql::plan::node::{Node, Plan};
-    use crate::utils::custom_error::LegendDBResult;
+    use crate::custom_error::LegendDBResult;
 
     #[test]
     fn test_plan_create_table() -> LegendDBResult<()> {

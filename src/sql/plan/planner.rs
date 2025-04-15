@@ -2,7 +2,7 @@ use crate::sql::parser::ast::{FromItem, JoinType, Statement};
 use crate::sql::plan::node::{Node, Plan};
 use crate::sql::schema::{Column, Table};
 use crate::sql::types::Value;
-use crate::utils::custom_error::{LegendDBError, LegendDBResult};
+use crate::custom_error::{LegendDBError, LegendDBResult};
 
 pub struct Planner;
 

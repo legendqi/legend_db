@@ -1,7 +1,7 @@
 use crate::sql::engine::engine::Transaction;
 use crate::sql::executor::executor::{Executor, ResultSet};
 use crate::sql::schema::Table;
-use crate::utils::custom_error::LegendDBResult;
+use crate::custom_error::LegendDBResult;
 
 pub struct CreateTableExecutor {
     schema: Table,

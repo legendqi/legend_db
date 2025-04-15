@@ -1,5 +1,5 @@
 use std::ops::{Bound, RangeBounds};
-use crate::utils::custom_error::LegendDBResult;
+use crate::custom_error::LegendDBResult;
 
 //抽象存储引擎接口定义，接入不同的存储引擎，目前只支持内存和简单的磁盘KV存储
 pub trait Engine {
@@ -38,9 +38,9 @@ mod tests {
     use super::Engine;
     use std::{ops::Bound};
     use std::path::PathBuf;
-    use crate::sql::storage::disk::DiskEngine;
-    use crate::sql::storage::memory::MemoryEngine;
-    use crate::utils::custom_error::LegendDBResult;
+    use crate::storage::disk::DiskEngine;
+    use crate::storage::memory::MemoryEngine;
+    use crate::custom_error::LegendDBResult;
 
     // 测试点读的情况
     fn test_point_opt(mut eng: impl Engine) -> LegendDBResult<()> {

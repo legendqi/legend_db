@@ -4,4 +4,3 @@ pub mod plan;
 pub mod schema;
 pub mod executor;
 pub mod engine;
-pub mod storage;

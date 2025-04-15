@@ -7,8 +7,8 @@ use std::ops::{RangeBounds};
 use std::path::PathBuf;
 use fs4::fs_std::FileExt;
 use btree_map::Range;
-use crate::sql::storage::engine::{Engine, EngineIterator};
-use crate::utils::custom_error::LegendDBResult;
+use crate::storage::engine::{Engine, EngineIterator};
+use crate::custom_error::LegendDBResult;
 
 pub type KeyDir = BTreeMap<Vec<u8>, (u64, u32)>;
 // 日志文件头大小 key value 都是u32 所以是8个字节
@@ -247,9 +247,9 @@ impl Log {
 #[cfg(test)]
 mod test {
     use std::path::PathBuf;
-    use crate::sql::storage::disk::DiskEngine;
-    use crate::sql::storage::engine::Engine;
-    use crate::utils::custom_error::LegendDBResult;
+    use crate::storage::disk::DiskEngine;
+    use crate::storage::engine::Engine;
+    use crate::custom_error::LegendDBResult;
 
     #[test]
     fn test_disk_engine_compact() -> LegendDBResult<()> {

@@ -1,4 +1,5 @@
 use std::cmp::Ordering;
+use std::fmt::{Display, Formatter};
 use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use crate::sql::parser::ast::{Consts, Expression};
@@ -26,15 +27,15 @@ pub enum Value {
     Integer(i64),
     Float(f64),
     String(String),
-    Date(String),
-    Time(String),
-    DateTime(String),
-    Binary(Vec<u8>),
-    Array(Vec<Value>),
-    Map(Vec<(Value, Value)>),
-    Union(Vec<Value>),
-    Json(String),
-    Jsonb(String),
+    // Date(String),
+    // Time(String),
+    // DateTime(String),
+    // Binary(Vec<u8>),
+    // Array(Vec<Value>),
+    // Map(Vec<(Value, Value)>),
+    // Union(Vec<Value>),
+    // Json(String),
+    // Jsonb(String),
 }
 
 impl PartialOrd for Value {
@@ -50,6 +51,19 @@ impl PartialOrd for Value {
             (Value::Float(a), Value::Integer(b)) => a.partial_cmp(&(*b as f64)),
             (Value::String(a), Value::String(b)) => a.partial_cmp(b),
             (_, _) => None,
+        }
+    }
+}
+
+impl Display for Value {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Value::Null => write!(f, "{}", "NULL"),
+            Value::Boolean(b) if *b => write!(f, "{}", "TRUE"),
+            Value::Boolean(_) => write!(f, "{}", "FALSE"),
+            Value::Integer(v) => write!(f, "{}", v),
+            Value::Float(v) => write!(f, "{}", v),
+            Value::String(v) => write!(f, "{}", v),
         }
     }
 }
@@ -75,12 +89,12 @@ impl Value {
             Value::Integer(_) => Some(DataType::Integer),
             Value::Float(_) => Some(DataType::Float),
             Value::String(_) => Some(DataType::String),
-            Value::Date(_) => Some(DataType::Date),
-            Value::Time(_) => Some(DataType::Time),
-            Value::DateTime(_) => Some(DataType::DateTime),
-            Value::Binary(_) => Some(DataType::Binary),
-            Value::Json(_) => Some(DataType::String),
-            Value::Jsonb(_) => Some(DataType::String),
+            // Value::Date(_) => Some(DataType::Date),
+            // Value::Time(_) => Some(DataType::Time),
+            // Value::DateTime(_) => Some(DataType::DateTime),
+            // Value::Binary(_) => Some(DataType::Binary),
+            // Value::Json(_) => Some(DataType::String),
+            // Value::Jsonb(_) => Some(DataType::String),
             _ => None
         }
     }

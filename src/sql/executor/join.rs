@@ -2,7 +2,7 @@ use crate::sql::engine::engine::Transaction;
 use crate::sql::executor::executor::{Executor, ResultSet};
 use crate::sql::parser::ast::{Expression, Operation};
 use crate::sql::types::Value;
-use crate::utils::custom_error::{LegendDBError, LegendDBResult};
+use crate::custom_error::{LegendDBError, LegendDBResult};
 
 pub struct NestLoopJoinExecutor<T: Transaction> {
     left: Box<dyn Executor<T>>,

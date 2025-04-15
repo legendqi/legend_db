@@ -5,7 +5,7 @@ use crate::sql::parser::ast::Expression;
 use crate::sql::schema::Table;
 use crate::sql::types::{Row, Value};
 use crate::sql::types::DataType::Null;
-use crate::utils::custom_error::{LegendDBError, LegendDBResult};
+use crate::custom_error::{LegendDBError, LegendDBResult};
 
 pub struct InsertExecutor {
     table_name: String,
