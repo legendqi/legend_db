@@ -201,19 +201,19 @@ impl<'a> Parser<'a> {
                 },
                 token => Err(LegendDBError::Parser(format!("[Parser] Unexpected token: {:?}", token)))
             },
-            Token::Keyword(Keyword::Drop) => match self.custom_next()? {
-                Token::Keyword(Keyword::Table) => {
-                    Ok(Statement::DropTable {
-                        table_name: self.next_ident()?,
-                    })
-                },
-                Token::Keyword(Keyword::Database) => {
-                    Ok(Statement::DropDatabase {
-                        database_name: self.next_ident()?,
-                    })
-                },
-                token => Err(LegendDBError::Parser(format!("[Parser] Unexpected token: {:?}", token)))
-            },
+            // Token::Keyword(Keyword::Drop) => match self.custom_next()? {
+            //     Token::Keyword(Keyword::Table) => {
+            //         Ok(Statement::DropTable {
+            //             table_name: self.next_ident()?,
+            //         })
+            //     },
+            //     Token::Keyword(Keyword::Database) => {
+            //         Ok(Statement::DropDatabase {
+            //             database_name: self.next_ident()?,
+            //         })
+            //     },
+            //     token => Err(LegendDBError::Parser(format!("[Parser] Unexpected token: {:?}", token)))
+            // },
             token => Err(LegendDBError::Parser(format!("[Parser] Unexpected token: {:?}", token)))
         }
 
@@ -297,9 +297,7 @@ impl<'a> Parser<'a> {
                 if self.next_if_token(Token::LeftParen).is_some() {
                     // 取出列名
                     let col_name = self.next_ident()?;
-                    if self.next_if_token(Token::RightParen).is_none() {
-                        return Err(LegendDBError::Parser(format!("[Parser] Unexpected token: {:?}", self.custom_next()?)));
-                    }
+                    self.next_expect(Token::RightParen)?;
                     Expression::Function(ident.clone(), col_name)
                     // 解析函数
                 } else {

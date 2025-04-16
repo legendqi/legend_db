@@ -1,4 +1,4 @@
-use crate::sql::parser::ast::{FromItem, JoinType, Statement};
+use crate::sql::parser::ast::{Expression, FromItem, JoinType, Statement};
 use crate::sql::plan::node::{Node, Plan};
 use crate::sql::schema::{Column, Table};
 use crate::sql::types::Value;
@@ -48,7 +48,24 @@ impl Planner {
                 },
                 Statement::Select {columns, from, order_by, limit, offset } => {
                     let mut scan_node = self.build_from_item(from)?;
-                    
+                    // 函数支持
+                    let mut has_agg = false;
+                    if !columns.is_empty() {
+                        for (expr, _) in columns.iter() {
+                            // 如果是Function类型就说明给你是agg
+                            if let Expression::Function(_, _) = expr {
+                                has_agg = true;
+                                break;
+                            }
+                        }
+                        if has_agg {
+                            // 构造一个聚合节点
+                            scan_node = Node::Aggregate {
+                                source: Box::new(scan_node),
+                                expr: columns.clone(),
+                            };
+                        }
+                    }
                     if order_by.len() > 0 {
                         scan_node = Node::OrderBy {
                             source: Box::new(scan_node),
@@ -77,7 +94,7 @@ impl Planner {
                     };
                     
                     // Projection
-                    if !columns.is_empty() {
+                    if !columns.is_empty() && !has_agg {
                         scan_node = Node::Projection {
                             source: Box::new(scan_node),
                             columns

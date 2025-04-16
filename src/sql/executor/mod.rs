@@ -5,6 +5,7 @@ pub mod insert;
 pub mod update;
 pub mod delete;
 pub mod databases;
-mod join;
+pub mod join;
+pub mod agg;
 
 

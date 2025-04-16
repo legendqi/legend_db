@@ -9,6 +9,7 @@ use crate::sql::executor::update::UpdateExecutor;
 use crate::sql::plan::node::Node;
 use crate::sql::types::Row;
 use crate::custom_error::LegendDBResult;
+use crate::sql::executor::agg::AggregateExecutor;
 
 // 抽象执行器定义
 pub trait Executor<T: Transaction> {
@@ -30,6 +31,7 @@ impl<T: Transaction + 'static> dyn Executor<T> {
             Node::Limit {source, limit} => LimitExecutor::new(Self::build(*source), limit),
             Node::Offset {source, offset} => OffsetExecutor::new(Self::build(*source), offset),
             Node::Projection {source, columns} => ProjectionExecutor::new(Self::build(*source), columns),
+            Node::Aggregate {source, expr} => AggregateExecutor::new(Self::build(*source), expr),
             Node::NestedLoopJoin {left, right, predicate, outer} => NestLoopJoinExecutor::new(Self::build(*left), Self::build(*right), predicate, outer),
             Node::UseDatabase {database_name} => UseDatabaseExecutor::new(database_name),
         }

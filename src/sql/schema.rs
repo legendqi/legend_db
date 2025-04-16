@@ -41,9 +41,7 @@ impl Table {
                             return Err(LegendDBError::Internal(format!("table {} has column {} with invalid default value type", self.name, column.name)));
                         }
                     },
-                    None => {
-                        return Err(LegendDBError::Internal(format!("table {} has column {} with invalid default value", self.name, column.name)));
-                    }
+                    None => {}
                 }
             }
         }

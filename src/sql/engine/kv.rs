@@ -409,4 +409,23 @@ mod tests {
         s.execute("drop database test;")?;
         Ok(())
     }
+    
+    #[test]
+    fn test_agg() -> LegendDBResult<()> {
+        let p = tempfile::tempdir()?.into_path().join("sqldb-log");
+        let kvengine = KVEngine::new(DiskEngine::new(p.clone())?);
+        let mut s = kvengine.session()?;
+        s.execute("create table t1 (a int primary key, b text, c float);")?;
+        s.execute("insert into t1 values (1, 'a', 1.1);")?;
+        s.execute("insert into t1 values (2, 'b', 2.2);")?;
+        s.execute("insert into t1 values (3, 'c', 3.3);")?;
+        match s.execute("select min(c) as ffffff from t1;")? {
+            ResultSet::Scan { columns, rows } => {
+                print!("{:?}", columns);
+                print!("{:?}", rows);
+            }
+            _ => unreachable!(),
+        }
+        Ok(())
+    }
 }

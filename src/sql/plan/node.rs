@@ -64,6 +64,11 @@ pub enum Node {
         predicate: Option<Expression>,
         outer: bool,
     },
+    // Agg 聚集节点
+    Aggregate {
+        source: Box<Node>,
+        expr: Vec<(Expression, Option<String>)>,
+    },
     CreateDatabase {
         database_name: String,
     },
