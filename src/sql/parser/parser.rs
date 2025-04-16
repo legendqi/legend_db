@@ -39,8 +39,28 @@ impl<'a> Parser<'a> {
             Some(Token::Keyword(Keyword::Select)) => self.parse_select(),
             Some(Token::Keyword(Keyword::Update)) => self.parse_update(),
             Some(Token::Keyword(Keyword::Delete)) => self.parse_delete(),
+            Some(Token::Keyword(Keyword::Drop)) => self.parse_drop(),
             Some(token) => Err(LegendDBError::Parser(format!("[Parser] Unexpected token: {:?}", token))),
             None => Err(LegendDBError::Parser("[Parser] Unexpected end of input".to_string())),
+        }
+    }
+
+    fn parse_drop(&mut self) -> LegendDBResult<Statement> {
+        self.next_expect(Token::Keyword(Keyword::Drop))?;
+        match self.custom_next()? {
+            Token::Keyword(Keyword::Database) => {
+                let database_name = self.next_ident()?;
+                Ok(Statement::DropDatabase {
+                    database_name,
+                })
+            }
+            Token::Keyword(Keyword::Table) => {
+                let table_name =self.next_ident()?;
+                Ok(Statement::DropTable {
+                    table_name,
+                })
+            },
+            _ => Err(LegendDBError::Parser("[Parser] Unexpected token".to_string())),
         }
     }
     
@@ -181,11 +201,19 @@ impl<'a> Parser<'a> {
                 },
                 token => Err(LegendDBError::Parser(format!("[Parser] Unexpected token: {:?}", token)))
             },
-            // Token::Keyword(Keyword::Drop) => match self.custom_next()? {
-            //     Token::Keyword(Keyword::Table) => self.parse_drop_table(),
-            //     Token::Keyword(Keyword::Database) => self.parse_drop_database(),
-            //     token => Err(LegendDBError::Parser(format!("[Parser] Unexpected token: {:?}", token)))
-            // },
+            Token::Keyword(Keyword::Drop) => match self.custom_next()? {
+                Token::Keyword(Keyword::Table) => {
+                    Ok(Statement::DropTable {
+                        table_name: self.next_ident()?,
+                    })
+                },
+                Token::Keyword(Keyword::Database) => {
+                    Ok(Statement::DropDatabase {
+                        database_name: self.next_ident()?,
+                    })
+                },
+                token => Err(LegendDBError::Parser(format!("[Parser] Unexpected token: {:?}", token)))
+            },
             token => Err(LegendDBError::Parser(format!("[Parser] Unexpected token: {:?}", token)))
         }
 
@@ -452,28 +480,6 @@ impl<'a> Parser<'a> {
         })
     }
 
-    // fn parse_create_database(&mut self) -> LegendDBResult<Statement> {
-    //     match self.next_ident()? {
-    //         Some(Token::Identifier(ident)) => {
-    //             // 创建数据库
-    //             match ident.as_str() {
-    //                 "database" => {
-    //                     Ok(Statement::CreateDatabase {
-    //                         name: ident,
-    //                     })
-    //                 },
-    //                 "table" => {
-    //                     Ok(Statement::CreateTable {
-    //                         name: ident,
-    //                         columns: vec![],
-    //                     })
-    //                 }
-    //             }
-    //         },
-    //         None => Err(LegendDBError::Parser("[Parser] Unexpected end of input".to_string())),
-    //         _ => Err(LegendDBError::Parser("[Parser] Unexpected token".to_string()))
-    //     }
-    // }
 
     fn custom_peek(&mut self) -> LegendDBResult<Option<Token>> {
         //transpose 方法作用是将 Option<Result<T, E>> 转换为 Result<Option<T>, E>
@@ -649,6 +655,22 @@ use std::collections::BTreeMap;
                 where_clause: Some(where_clause),
             }
         );
+        Ok(())
+    }
+
+    #[test]
+    fn test_parser_create_database() -> LegendDBResult<()> {
+        let sql = "create database test;";
+        let stmt = Parser::new(sql).parse()?;
+        println!("{:?}", stmt);
+        Ok(())
+    }
+
+    #[test]
+    fn test_parser_drop_database() -> LegendDBResult<()> {
+        let sql = "drop database test;";
+        let stmt = Parser::new(sql).parse()?;
+        println!("{:?}", stmt);
         Ok(())
     }
 }

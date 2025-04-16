@@ -1,5 +1,6 @@
 use std::collections::BTreeMap;
 use std::fs;
+use std::fs::File;
 use bincode::{config, Decode, Encode};
 use serde::{Deserialize, Serialize};
 use crate::sql::engine::engine::{Engine, Session, Transaction};
@@ -81,23 +82,22 @@ impl<E: StorageEngine> Transaction for KVTransaction<E> {
         Ok(self.txn.rollback()?)
     }
 
-    #[allow(unused)]
     fn create_database(&self, name: &str) -> LegendDBResult<()> {
         // 判断数据库是否存在
-        if fs::metadata(format!("{}/{}", DEFAULT_DB_FOLDER, name)).is_ok() {
+        if fs::metadata(format!("{}{}.db", DEFAULT_DB_FOLDER, name)).is_ok() {
             return Err(LegendDBError::Internal(format!("database {} already exists", name)));
         } else {
-            fs::create_dir(format!("{}/{}", DEFAULT_DB_FOLDER, name))?;
+            File::create(format!("{}{}.db", DEFAULT_DB_FOLDER, name))?;
         }
         Ok(())
     }
     #[allow(unused)]
     fn drop_database(&self, name: &str) -> LegendDBResult<()> {
         // 判断数据库是否存在
-        if !fs::metadata(format!("{}/{}", DEFAULT_DB_FOLDER, name)).is_ok() {
+        if !fs::metadata(format!("{}/{}.db", DEFAULT_DB_FOLDER, name)).is_ok() {
             return Err(LegendDBError::Internal(format!("database {} not already exists", name)));
         } else {
-            fs::remove_file(format!("{}/{}", DEFAULT_DB_FOLDER, name))?;
+            fs::remove_file(format!("{}/{}.db", DEFAULT_DB_FOLDER, name))?;
         }
         Ok(())
     }
@@ -389,6 +389,24 @@ mod tests {
         }
 
         std::fs::remove_dir_all(p.parent().unwrap())?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_create_database() -> LegendDBResult<()> {
+        let p = tempfile::tempdir()?.into_path().join("sqldb-log");
+        let kvengine = KVEngine::new(DiskEngine::new(p.clone())?);
+        let mut s = kvengine.session()?;
+        s.execute("create database test;")?;
+        Ok(())
+    }
+
+    #[test]
+    fn test_drop_database() -> LegendDBResult<()> {
+        let p = tempfile::tempdir()?.into_path().join("sqldb-log");
+        let kvengine = KVEngine::new(DiskEngine::new(p.clone())?);
+        let mut s = kvengine.session()?;
+        s.execute("drop database test;")?;
         Ok(())
     }
 }
