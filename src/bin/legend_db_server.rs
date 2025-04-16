@@ -11,7 +11,7 @@ use legend_db::sql::engine::engine::{Engine, Session};
 use legend_db::sql::engine::kv::KVEngine;
 use legend_db::storage::disk::DiskEngine;
 
-const DB_PATH: &str = "/tmp/sqldb-test/sqldb-log";
+const DB_PATH: &str = "/tmp/legend_db-test/legend_db-log";
 const RESPONSE_END: &str = "!!!end!!!";
 
 /// Possible requests our clients can send us
@@ -102,7 +102,7 @@ async fn main() -> LegendDBResult<()> {
         .unwrap_or_else(|| "127.0.0.1:8080".to_string());
 
     let listener = TcpListener::bind(&addr).await?;
-    println!("sqldb server starts, listening on: {addr}");
+    println!("legend_db server starts, listening on: {addr}");
 
     // 初始化 DB
     let p = PathBuf::from(DB_PATH);
