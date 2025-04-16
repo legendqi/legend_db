@@ -85,6 +85,7 @@ impl Planner {
                     }
                     scan_node
                 }
+                // 删除数据
                 Statement::Delete { table_name, where_clause } => {
                     Node::Delete {
                         table_name: table_name.clone(),
@@ -94,6 +95,7 @@ impl Planner {
                         }),
                     }
                 },
+                // 更新数据
                 Statement::Update { table_name, columns, where_clause } => {
                     Node::Update {
                         table_name: table_name.clone(),
@@ -104,21 +106,30 @@ impl Planner {
                         columns
                     }
                 },
+                // 删除表
                 Statement::DropTable { table_name } => {
                     Node::DropTable {
                         table_name,
                     }
                 },
+                // 创建数据库
                 Statement::CreateDatabase { database_name} => {
                     Node::CreateDatabase {
                         database_name,
                     }
                 },
+                // 删除数据库
                 Statement::DropDatabase { database_name } => {
                     Node::DropDatabase {
                         database_name,
                     }
                 },
+                // 切换数据库
+                Statement::UseDatabase { database_name} => {
+                    Node::UseDatabase {
+                        database_name,
+                    }
+                }
             }
         )
     }

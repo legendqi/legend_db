@@ -34,6 +34,7 @@ impl<'a> Parser<'a> {
         // 查看第一个token类型
         match self.custom_peek()? {
             Some(Token::Keyword(Keyword::Create)) => self.parse_ddl(),
+            Some(Token::Keyword((Keyword::Use))) => self.parse_use(),
             Some(Token::Keyword(Keyword::Insert)) => self.parse_insert(),
             Some(Token::Keyword(Keyword::Select)) => self.parse_select(),
             Some(Token::Keyword(Keyword::Update)) => self.parse_update(),
@@ -52,6 +53,15 @@ impl<'a> Parser<'a> {
         Ok(Statement::Delete {
             table_name,
             where_clause,
+        })
+    }
+
+    // 解析use
+    fn parse_use(&mut self) -> LegendDBResult<Statement> {
+        self.next_expect(Token::Keyword(Keyword::Use))?;
+        let database_name = self.next_ident()?;
+        Ok(Statement::UseDatabase {
+            database_name,
         })
     }
 

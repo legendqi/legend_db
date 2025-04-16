@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::fs;
 use bincode::{config, Decode, Encode};
 use serde::{Deserialize, Serialize};
 use crate::sql::engine::engine::{Engine, Session, Transaction};
@@ -9,7 +10,7 @@ use crate::storage::engine::Engine as StorageEngine;
 use crate::storage::keycode::{deserializer, serializer};
 use crate::storage::mvcc::{MvccTransaction};
 use crate::sql::types::{Row, Value};
-use crate::custom_error::{LegendDBError, LegendDBResult};
+use crate::custom_error::{LegendDBError, LegendDBResult, CURRENT_DB_FILE, DEFAULT_DB_FOLDER};
 // KV引擎定义
 #[derive(Debug)]
 pub struct KVEngine<E: StorageEngine> {
@@ -82,11 +83,34 @@ impl<E: StorageEngine> Transaction for KVTransaction<E> {
 
     #[allow(unused)]
     fn create_database(&self, name: &str) -> LegendDBResult<()> {
-        todo!()
+        // 判断数据库是否存在
+        if fs::metadata(format!("{}/{}", DEFAULT_DB_FOLDER, name)).is_ok() {
+            return Err(LegendDBError::Internal(format!("database {} already exists", name)));
+        } else {
+            fs::create_dir(format!("{}/{}", DEFAULT_DB_FOLDER, name))?;
+        }
+        Ok(())
     }
     #[allow(unused)]
     fn drop_database(&self, name: &str) -> LegendDBResult<()> {
-        todo!()
+        // 判断数据库是否存在
+        if !fs::metadata(format!("{}/{}", DEFAULT_DB_FOLDER, name)).is_ok() {
+            return Err(LegendDBError::Internal(format!("database {} not already exists", name)));
+        } else {
+            fs::remove_file(format!("{}/{}", DEFAULT_DB_FOLDER, name))?;
+        }
+        Ok(())
+    }
+
+    fn use_database(&self, database_name: &str) -> LegendDBResult<()> {
+        // 判断数据库是否存在
+        if !fs::metadata(format!("{}/{}", DEFAULT_DB_FOLDER, database_name)).is_ok() {
+            return Err(LegendDBError::Internal(format!("database {} not already exists", database_name)));
+        }
+        // 没有文件会创建文件，并将内容写到文件中
+        fs::write(CURRENT_DB_FILE, database_name)?;
+
+        Ok(())
     }
 
     fn create_table(&mut self, table: Table) -> LegendDBResult<()> {

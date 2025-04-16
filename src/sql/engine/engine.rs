@@ -38,6 +38,9 @@ pub trait Transaction {
     // 删除数据库
     fn drop_database(&self, name: &str) -> LegendDBResult<()>;
 
+    // 切换数据库
+    fn use_database(&self, database_name: &str) -> LegendDBResult<()>;
+
     // 创建表
     fn create_table(&mut self, table: Table) -> LegendDBResult<()>;
 

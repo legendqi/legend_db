@@ -45,3 +45,25 @@ impl<T: Transaction> Executor<T> for DropDataBaseExecutor {
         })
     }
 }
+
+pub struct UseDatabaseExecutor {
+    pub database_name: String,
+}
+
+impl UseDatabaseExecutor {
+    pub fn new(database_name: String) -> Box<Self> {
+        Box::new(Self {
+            database_name
+        }
+    )
+    }
+}
+
+impl<T: Transaction> Executor<T> for UseDatabaseExecutor {
+    fn execute(self: Box<Self>, txn: &mut T) -> LegendDBResult<ResultSet> {
+        txn.use_database(&*self.database_name.clone())?;
+        Ok(ResultSet::UseDatabase {
+            database_name: self.database_name.clone(),
+        })
+    }
+}

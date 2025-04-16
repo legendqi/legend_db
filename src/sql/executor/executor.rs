@@ -1,5 +1,5 @@
 use crate::sql::engine::engine::Transaction;
-use crate::sql::executor::databases::{CreateDataBaseExecutor, DropDataBaseExecutor};
+use crate::sql::executor::databases::{CreateDataBaseExecutor, DropDataBaseExecutor, UseDatabaseExecutor};
 use crate::sql::executor::delete::DeleteExecutor;
 use crate::sql::executor::insert::InsertExecutor;
 use crate::sql::executor::join::NestLoopJoinExecutor;
@@ -31,6 +31,7 @@ impl<T: Transaction + 'static> dyn Executor<T> {
             Node::Offset {source, offset} => OffsetExecutor::new(Self::build(*source), offset),
             Node::Projection {source, columns} => ProjectionExecutor::new(Self::build(*source), columns),
             Node::NestedLoopJoin {left, right, predicate, outer} => NestLoopJoinExecutor::new(Self::build(*left), Self::build(*right), predicate, outer),
+            Node::UseDatabase {database_name} => UseDatabaseExecutor::new(database_name),
         }
     }
 }
@@ -43,6 +44,9 @@ pub enum ResultSet {
         database_name: String
     },
     DropDatabase {
+        database_name: String
+    },
+    UseDatabase {
         database_name: String
     },
     CreateTable {

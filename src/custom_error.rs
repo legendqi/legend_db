@@ -6,9 +6,15 @@ use std::string::FromUtf8Error;
 use std::sync::{Arc, PoisonError};
 use bincode::error::DecodeError;
 use bincode::error::EncodeError;
-//自定义错误类型
+
+// 数据库默认存储路径
+pub static DEFAULT_DB_FOLDER: &'static str = "/etc/legend_db/";
+pub static CURRENT_DB_FILE: &'static str = "/etc/legend_db/current";
+
+// 自定义Result
 pub type LegendDBResult<T> = Result<T, LegendDBError>;
 
+//自定义错误类型
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum LegendDBError {
     #[error("parse int error: {0}")]

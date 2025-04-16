@@ -18,6 +18,7 @@ pub enum Statement {
     },
     DropTable { table_name: String },
     DropDatabase { database_name: String },
+    UseDatabase { database_name: String },
 }
 
 #[derive(Debug, PartialEq, Clone)]

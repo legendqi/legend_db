@@ -70,6 +70,9 @@ pub enum Node {
     DropDatabase {
         database_name: String,
     },
+    UseDatabase {
+        database_name: String,
+    }
 }
 
 //执行计划定义，底层是不同类型的节点
