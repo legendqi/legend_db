@@ -16,6 +16,7 @@ pub trait Executor<T: Transaction> {
     fn execute(self: Box<Self<>>, txn: &mut T) -> LegendDBResult<ResultSet>;
 }
 
+
 impl<T: Transaction + 'static> dyn Executor<T> {
     pub fn build(node: Node) -> Box<dyn Executor<T>> {
         match node {
@@ -31,7 +32,7 @@ impl<T: Transaction + 'static> dyn Executor<T> {
             Node::Limit {source, limit} => LimitExecutor::new(Self::build(*source), limit),
             Node::Offset {source, offset} => OffsetExecutor::new(Self::build(*source), offset),
             Node::Projection {source, columns} => ProjectionExecutor::new(Self::build(*source), columns),
-            Node::Aggregate {source, expr} => AggregateExecutor::new(Self::build(*source), expr),
+            Node::Aggregate {source, expr, group_by} => AggregateExecutor::new(Self::build(*source), expr, group_by),
             Node::NestedLoopJoin {left, right, predicate, outer} => NestLoopJoinExecutor::new(Self::build(*left), Self::build(*right), predicate, outer),
             Node::UseDatabase {database_name} => UseDatabaseExecutor::new(database_name),
         }

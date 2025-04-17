@@ -121,6 +121,7 @@ impl<'a> Parser<'a> {
         Ok(Select {
             columns: self.parse_select_columns()?,
             from: self.parse_from()?,
+            group_by: self.parse_group_by()?,
             order_by: self.parse_order_by()?,
             limit: {
                 if self.next_if_token(Token::Keyword(Keyword::Limit)).is_some() {
@@ -454,6 +455,13 @@ impl<'a> Parser<'a> {
         Ok(FromItem::Table {name: self.next_ident()?, alias})
     }
 
+    fn parse_group_by(&mut self) -> LegendDBResult<Option<Expression>> {
+        if self.next_if_token(Token::Keyword(Keyword::Group)).is_none() {
+            return Ok(None);
+        }
+        self.next_expect(Token::Keyword(Keyword::By))?;
+        Ok(Some(self.parse_expression()?))
+    }
     fn parser_from_join(&mut self) -> LegendDBResult<Option<JoinType>> {
         // 是否是cross join
         if self.next_if_token(Token::Keyword(Keyword::Cross)).is_some() {

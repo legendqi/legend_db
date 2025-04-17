@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::custom_error::{LegendDBError, LegendDBResult};
 use crate::sql::engine::engine::Transaction;
 use crate::sql::executor::executor::{Executor, ResultSet};
@@ -8,14 +9,16 @@ use crate::sql::types::Value::Null;
 pub struct AggregateExecutor<T: Transaction> {
     source: Box<dyn Executor<T>>,
     expressions: Vec<(Expression, Option<String>)>,
+    group_by: Option<Expression>
 }
 
 impl<T: Transaction> AggregateExecutor<T> {
-    pub fn new(source: Box<dyn Executor<T>>, expressions: Vec<(Expression, Option<String>)>) -> Box<Self> {
+    pub fn new(source: Box<dyn Executor<T>>, expressions: Vec<(Expression, Option<String>)>, group_by: Option<Expression>) -> Box<Self> {
         Box::new(
             Self {
                 source,
                 expressions,
+                group_by,
             }
         )
     }
@@ -26,18 +29,82 @@ impl<T: Transaction> Executor<T> for AggregateExecutor<T> {
         if let ResultSet::Scan { columns, rows } = self.source.execute(txn)? {
             let mut new_row = Vec::new();
             let mut new_col = Vec::new();
-            for (expr, alias) in self.expressions {
-                if let Expression::Function(func_name, col_name) = expr {
-                    let calculator = <dyn Calculator>::build(&func_name)?;
-                    let value = calculator.calculate(&col_name, &columns, &rows)?;
-                    new_row.push(value);
-                    // 有别名就取别名，没有别名就取函数名
-                    new_col.push(if let Some(alias) = alias { alias } else { func_name })
+            // 计算聚合函数 如果是分组的计算，
+            let mut agg_calculation = |col_val: Option<&Value>, row: &Vec<Vec<Value>>| -> LegendDBResult<(Vec<Value>)> {
+                let mut new_row = Vec::new();
+                // 此处也需要使用借用类型
+                for (expr, alias) in &self.expressions {
+                    match expr {
+                        Expression::Function(func_name, col_name) => {
+                            let calculator = <dyn Calculator>::build(&func_name)?;
+                            let value = calculator.calculate(&col_name, &columns, row)?;
+                            new_row.push(value);
+                            // min(a)            -> min
+                            // min(a) as min_val -> min_val
+                            // 有别名就取别名，没有别名就取函数名
+                            if new_col.len() < self.expressions.len() {
+                                new_col.push(if let Some(alias) = alias { alias.clone() } else { func_name.clone() })
+                            }
+                        },
+                        // group by的列
+                        Expression::Field(col) => {
+                            if let Some(Expression::Field(group_col)) = &self.group_by {
+                                if *col != *group_col {
+                                    return Err(LegendDBError::Internal(format!("{} must appear in the GROUP BY clause or aggregate function", col)))
+                                }
+                            }
+                            if new_col.len() < self.expressions.len() {
+                                new_col.push(if let Some(alias) = alias { alias.clone() } else { col.clone() });
+                            }
+                            // 此处col_val在Expression::Field(col)的match情况中，使用了就回收了，而前面是有所有权的，所以这儿可以使用借用类型
+                            new_row.push(col_val.unwrap().clone());
+                        }
+                        _ => return Err(LegendDBError::Internal("Unexpected expression".to_string()))
+                    }
                 }
+                return Ok((new_row))
+            };
+            // 判断是否有group_by
+            // select c2, min(c1), max(c3) from t group by c2;
+            // c1 c2 c3
+            // 1 aa 4.6
+            // 3 cc 3.4
+            // 2 bb 5.2
+            // 4 cc 6.1
+            // 5 aa 8.3
+            // ----|------
+            // ----|------
+            // ----v------
+            // 1 aa 4.6
+            // 5 aa 8.3
+            //
+            // 2 bb 5.2
+            //
+            // 3 cc 3.4
+            // 4 cc 6.1
+            if let Some(Expression::Field(group_col)) = &self.group_by {
+                // 获取分组列的位置
+                let position = get_position(&columns, &group_col)?;
+                // 针对Group by 的列进行分组
+                let mut agg_map = HashMap::new();
+                for row in rows.iter() {
+                    let key = &row[position];
+                    // Value作为hashmap的key，需要实现Hash的trait
+                    let value = agg_map.entry(key).or_insert(Vec::new());
+                    value.push(row.to_owned())
+                }
+                for (key, value) in agg_map {
+                    let row = agg_calculation(Some(key), &value)?;
+                    new_row.push(row);
+                }
+             } else {
+                let row = agg_calculation(None, &rows)?;
+                new_row.push(row);
             }
+
             return Ok(ResultSet::Scan {
                 columns: new_col,
-                rows: vec![new_row],
+                rows: new_row,
             })
         }
         Err(LegendDBError::Internal("Unexpected result set".to_string()))

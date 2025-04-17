@@ -12,6 +12,7 @@ pub enum Statement {
     Select { 
         columns: Vec<(Expression, Option<String>)>,
         from: FromItem,
+        group_by: Option<Expression>,
         order_by: Vec<(String, OrderDirection)>,
         limit: Option<Expression>,
         offset: Option<Expression>

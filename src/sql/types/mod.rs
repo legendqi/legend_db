@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 use std::fmt::{Display, Formatter};
+use std::hash::{Hash, Hasher};
 use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use crate::sql::parser::ast::{Consts, Expression};
@@ -37,6 +38,34 @@ pub enum Value {
     // Json(String),
     // Jsonb(String),
 }
+
+impl Hash for Value {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            Value::Null => state.write_u8(0),
+            Value::Boolean(b) => {
+                state.write_u8(if *b { 1 } else { 2 });
+                b.hash(state);
+            },
+            Value::Integer(i) => {
+                state.write_u8(3);
+                i.hash(state);
+            },
+            Value::Float(f) => {
+                state.write_u8(4);
+                // f64 本身没有实现 Hash，需要将f64转为bytes
+                f.to_be_bytes().hash(state);
+            },
+            Value::String(s) => {
+                state.write_u8(5);
+                s.hash(state);
+            },
+        }
+    }
+}
+
+impl Eq for Value {}
+
 
 impl PartialOrd for Value {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
