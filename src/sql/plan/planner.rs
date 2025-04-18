@@ -46,8 +46,8 @@ impl Planner {
                         values
                     }
                 },
-                Statement::Select {columns, from, group_by, order_by, limit, offset } => {
-                    let mut scan_node = self.build_from_item(from)?;
+                Statement::Select {columns, from, where_clause, group_by, order_by, limit, offset } => {
+                    let mut scan_node = self.build_from_item(from, &where_clause)?;
                     // 函数支持
                     let mut has_agg = false;
                     if !columns.is_empty() {
@@ -152,12 +152,12 @@ impl Planner {
         )
     }
     
-    pub fn build_from_item(&self, from_item: FromItem) -> LegendDBResult<Node> {
+    pub fn build_from_item(&self, from_item: FromItem, expression: &Option<Expression>) -> LegendDBResult<Node> {
         Ok(match from_item { 
             FromItem::Table { name, alias: _ } => {
                 Node::Scan {
                     table_name: name,
-                    filter: None,
+                    filter: expression.clone(),
                 }
             },
             FromItem::Join { left, right, join_type, predicate} => {
@@ -170,8 +170,8 @@ impl Planner {
                     _ => true,
                 };
                 Node::NestedLoopJoin {
-                    left: Box::new(self.build_from_item(*left)?),
-                    right: Box::new(self.build_from_item(*right)?),
+                    left: Box::new(self.build_from_item(*left, expression)?),
+                    right: Box::new(self.build_from_item(*right, expression)?),
                     predicate,
                     outer,
                 }

@@ -121,6 +121,7 @@ impl<'a> Parser<'a> {
         Ok(Select {
             columns: self.parse_select_columns()?,
             from: self.parse_from()?,
+            where_clause: self.parse_where_clause()?,
             group_by: self.parse_group_by()?,
             order_by: self.parse_order_by()?,
             limit: {
@@ -202,19 +203,6 @@ impl<'a> Parser<'a> {
                 },
                 token => Err(LegendDBError::Parser(format!("[Parser] Unexpected token: {:?}", token)))
             },
-            // Token::Keyword(Keyword::Drop) => match self.custom_next()? {
-            //     Token::Keyword(Keyword::Table) => {
-            //         Ok(Statement::DropTable {
-            //             table_name: self.next_ident()?,
-            //         })
-            //     },
-            //     Token::Keyword(Keyword::Database) => {
-            //         Ok(Statement::DropDatabase {
-            //             database_name: self.next_ident()?,
-            //         })
-            //     },
-            //     token => Err(LegendDBError::Parser(format!("[Parser] Unexpected token: {:?}", token)))
-            // },
             token => Err(LegendDBError::Parser(format!("[Parser] Unexpected token: {:?}", token)))
         }
 
@@ -290,6 +278,29 @@ impl<'a> Parser<'a> {
     //     })
     // }
 
+    // 解析operation expression
+    fn parse_operation_expression(&mut self) -> LegendDBResult<Expression> {
+        let left = self.parse_expression()?;
+        match self.custom_next()? {
+            Token::Equal => {
+                let right = self.parse_expression()?;
+                Ok(Expression::Operation(Operation::Equal(Box::new(left), Box::new(right))))
+            },
+            Token::NotEqual => {
+                let right = self.parse_expression()?;
+                Ok(Expression::Operation(Operation::NotEqual(Box::new(left), Box::new(right))))
+            },
+            Token::GreaterThan => {
+                let right = self.parse_expression()?;
+                Ok(Expression::Operation(Operation::GreaterThan(Box::new(left), Box::new(right))))
+            },
+            Token::LessThan => {
+                let right = self.parse_expression()?;
+                Ok(Expression::Operation(Operation::LessThan(Box::new(left), Box::new(right))))
+            },
+            _ => Err(LegendDBError::NotSupported)
+        }
+    }
     // 解析表达式
     fn parse_expression(&mut self) -> LegendDBResult<Expression> {
         Ok(match self.custom_next()? {
@@ -329,26 +340,11 @@ impl<'a> Parser<'a> {
     }
     
     // 解析where子句
-    fn parse_where_clause(&mut self) -> LegendDBResult<Option<BTreeMap<String, Expression>>> {
+    fn parse_where_clause(&mut self) -> LegendDBResult<Option<Expression>> {
         if self.next_if_token(Token::Keyword(Keyword::Where)).is_none() {
             return Ok(None);
         }
-        let mut where_clause = BTreeMap::new();
-        loop {
-            let column_name = self.next_ident()?;
-            self.next_expect(Token::Equal)?;
-            let expr = self.parse_expression()?;
-            // 判断是否重复
-            if where_clause.contains_key(&column_name) {
-                return Err(LegendDBError::Parser(format!("[Parser] Duplicate column {} for update", column_name)));
-            }
-            where_clause.insert(column_name, expr);
-            // // 如果没有and则跳出循环
-            if self.next_if_token(Token::Keyword(Keyword::And)).is_none() && self.next_if_token(Token::Keyword(Keyword::Or)).is_none() {
-                break;
-            }
-        }
-        Ok(Some(where_clause))
+        Ok(Some(self.parse_operation_expression()?))
     }
     
     // 解析order by排序
@@ -658,7 +654,7 @@ use std::collections::BTreeMap;
             Statement::Update {
                 table_name: "tbl1".to_string(),
                 columns,
-                where_clause: Some(where_clause),
+                where_clause: None,
             }
         );
         Ok(())

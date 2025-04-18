@@ -7,11 +7,11 @@ use crate::custom_error::{LegendDBError, LegendDBResult};
 
 pub struct ScanExecutor {
     table_name: String,
-    filter: Option<BTreeMap<String, Expression>>
+    filter: Option<Expression>
 }
 
 impl ScanExecutor {
-    pub fn new(table_name: String, filter: Option<BTreeMap<String, Expression>>) -> Box<Self> {
+    pub fn new(table_name: String, filter: Option<Expression>) -> Box<Self> {
         Box::new(Self {
             table_name,
             filter

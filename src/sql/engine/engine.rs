@@ -57,7 +57,7 @@ pub trait Transaction {
     fn delete_row(&mut self, table: &Table, id: &Value) -> LegendDBResult<()>;
 
     // 扫描表
-    fn scan_table(&mut self, table_name: String, filter: Option<BTreeMap<String, Expression>>) -> LegendDBResult<Vec<Row>>;
+    fn scan_table(&mut self, table_name: String, filter: Option<Expression>) -> LegendDBResult<Vec<Row>>;
 
     //获取表信息
     fn get_table(&self, table: String) -> LegendDBResult<Option<Table>>;

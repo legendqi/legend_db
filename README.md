@@ -54,4 +54,16 @@ Mysql**的架构**
 
 采用`bincode`序列化和反序列化
 
-sql语法解析有更好的方案，后续考虑使用`sqlparser`，但此项目主要是了解数据库各个模块的实现。
+采用`tokio`实现服务端和客户端
+
+## linux编译
+`cargo build --release`
+
+## linux编译windows
+`cargo build --target x86_64-pc-windows-gnu --release`
+## 运行
+* 启动服务端legend_db_server
+* 启动客户端
+`legend -h 127.0.0.1 -P 8080 -u legend -p legend`
+## 运行效果如下
+![cmd](./docs/images/cmd.png)

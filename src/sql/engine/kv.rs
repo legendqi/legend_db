@@ -199,7 +199,7 @@ impl<E: StorageEngine> Transaction for KVTransaction<E> {
         Ok(names)
     }
 
-    fn scan_table(&mut self, table_name: String, filter: Option<BTreeMap<String, Expression>>) -> LegendDBResult<Vec<Row>> {
+    fn scan_table(&mut self, table_name: String, filter: Option<Expression>) -> LegendDBResult<Vec<Row>> {
         let table = self.get_table_must(table_name.clone())?;
         let prefix = KeyPrefix::Row(table_name.clone()).encode()?;
         let config = config::standard();

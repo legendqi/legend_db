@@ -22,7 +22,7 @@ pub enum Node {
 
     Scan {
         table_name: String,
-        filter: Option<BTreeMap<String, Expression>>
+        filter: Option<Expression>
     },
 
     Delete {

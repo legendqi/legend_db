@@ -6,12 +6,13 @@ pub enum Statement {
     CreateTable { name: String, columns: Vec<Column> },
     CreateDatabase { database_name: String },
     Insert { table_name: String, columns: Option<Vec<String>>, values: Vec<Vec<Expression>> },
-    Update { table_name: String, columns: BTreeMap<String, Expression>, where_clause: Option<BTreeMap<String, Expression>> },
-    Delete { table_name: String, where_clause: Option<BTreeMap<String, Expression>> },
+    Update { table_name: String, columns: BTreeMap<String, Expression>, where_clause: Option<Expression> },
+    Delete { table_name: String, where_clause: Option<Expression> },
     // 别名可有可无
     Select { 
         columns: Vec<(Expression, Option<String>)>,
         from: FromItem,
+        where_clause: Option<Expression>,
         group_by: Option<Expression>,
         order_by: Vec<(String, OrderDirection)>,
         limit: Option<Expression>,
@@ -62,7 +63,10 @@ pub struct Column {
 // join 的表达式，只有一种等于的情况
 #[derive(Debug, PartialEq, Clone)]
 pub enum Operation {
-    Equal(Box<Expression>, Box<Expression>)
+    Equal(Box<Expression>, Box<Expression>),
+    NotEqual(Box<Expression>, Box<Expression>),
+    GreaterThan(Box<Expression>, Box<Expression>),
+    LessThan(Box<Expression>, Box<Expression>),
 }
 
 // 表达式

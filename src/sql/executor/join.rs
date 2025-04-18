@@ -98,6 +98,9 @@ fn evaluate_expr(expression: &Expression, left_col: &Vec<String>, left_row: &Vec
                 (left, right) => Err(LegendDBError::Internal(format!("can not compare expression {:?} and {:?}", left, right))),
             }
         },
+        Expression::Operation(Operation::NotEqual(left, right)) => todo!(),
+        Expression::Operation(Operation::GreaterThan(left, right)) => todo!(),
+        Expression::Operation(Operation::LessThan(left, right)) => todo!(),
         _ => Err(LegendDBError::Internal("Unexpected expression".into()))
     }
 }
