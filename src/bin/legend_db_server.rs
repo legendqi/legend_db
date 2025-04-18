@@ -97,9 +97,10 @@ impl<E: Engine + 'static> ServerSession<E> {
 #[tokio::main]
 async fn main() -> LegendDBResult<()> {
     // 启动 TCP 服务
+    // todo 从配置中读取bind_address和port, 启动tcp服务
     let addr = env::args()
         .nth(1)
-        .unwrap_or_else(|| "127.0.0.1:8080".to_string());
+        .unwrap_or_else(|| "0.0.0.0:8080".to_string());
 
     let listener = TcpListener::bind(&addr).await?;
     println!("legend_db server starts, listening on: {addr}");

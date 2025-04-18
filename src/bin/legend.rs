@@ -3,6 +3,7 @@ use rustyline::error::ReadlineError;
 use rustyline::DefaultEditor;
 use std::env;
 use std::{error::Error, net::SocketAddr};
+use clap::Parser;
 use tokio::net::TcpStream;
 use tokio_util::codec::{FramedRead, FramedWrite, LinesCodec};
 
@@ -60,13 +61,29 @@ impl Drop for Client {
     }
 }
 
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+pub struct Legend {
+    ///用户名
+    #[arg(short, long)]
+    username: String,
+    ///密码
+    #[arg(short, long)]
+    password: String,
+    ///ip地址(可选)
+    #[arg(short, long, default_value = "127.0.0.1")]
+    host: Option<String>,
+    ///端口(可选)；
+    #[arg(short='P', long, default_value = "8080")]
+    port: Option<String>,
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let addr = env::args()
-        .nth(1)
-        .unwrap_or_else(|| "127.0.0.1:8080".to_string());
+    let args = Legend::parse();
+    let endpoint = format!("{}:{}", args.host.unwrap(), args.port.unwrap());
 
-    let addr = addr.parse::<SocketAddr>()?;
+    let addr = endpoint.parse::<SocketAddr>()?;
     let mut client = Client::new(addr).await?;
 
     let mut editor = DefaultEditor::new()?;

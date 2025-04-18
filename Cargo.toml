@@ -16,6 +16,7 @@ tokio = { version = "1.41.1", features = ["full"] }
 tokio-stream = "0.1.16"
 tokio-util = {version = "0.7.12", features = ["full"]}
 rustyline = "14.0.0"
+clap = {version = "4.5.36", features = ["derive"]}
 # 后期考虑使用rkyv，提升效率
 #rkyv = {version = "0.8.8", features = ["alloc", "std"]}
 #rkyv_derive = "0.8.8"
