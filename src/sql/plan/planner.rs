@@ -46,7 +46,7 @@ impl Planner {
                         values
                     }
                 },
-                Statement::Select {columns, from, order_by, limit, offset } => {
+                Statement::Select {columns, from, group_by, order_by, limit, offset } => {
                     let mut scan_node = self.build_from_item(from)?;
                     // 函数支持
                     let mut has_agg = false;
@@ -63,6 +63,7 @@ impl Planner {
                             scan_node = Node::Aggregate {
                                 source: Box::new(scan_node),
                                 expr: columns.clone(),
+                                group_by,
                             };
                         }
                     }

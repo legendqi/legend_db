@@ -55,7 +55,8 @@ pub enum Keyword {
     Left,
     Right,
     On,
-    Use
+    Use,
+    Group
 }
 
 impl Keyword {
@@ -109,6 +110,7 @@ impl Keyword {
             "RIGHT" => Some(Keyword::Right),
             "ON" => Some(Keyword::On),
             "USE" => Some(Keyword::Use),
+            "GROUP" => Some(Keyword::Group),
             _ => None,
         }
     }
@@ -163,6 +165,7 @@ impl Keyword {
             Keyword::Right => "RIGHT",
             Keyword::On => "ON",
             Keyword::Use => "USE",
+            Keyword::Group => "GROUP",
         }
     }
 }

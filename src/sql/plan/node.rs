@@ -68,6 +68,7 @@ pub enum Node {
     Aggregate {
         source: Box<Node>,
         expr: Vec<(Expression, Option<String>)>,
+        group_by: Option<Expression>,
     },
     CreateDatabase {
         database_name: String,
