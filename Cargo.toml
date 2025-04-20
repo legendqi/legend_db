@@ -25,15 +25,15 @@ clap = {version = "4.5.36", features = ["derive"]}
 [package.metadata.deb]
 maintainer = "legendqi <yuwenqigod@gmail.com>"
 copyright = "2023, legendqi"
-license-file = ["LICENSE", "usr/share/doc/myapp/copyright"]
-depends = "$auto, libssl1.1 (>= 1.1.0)"
 section = "utils"
 priority = "optional"
 assets = [
-    ["target/release/legend_db_client", "usr/bin/", "755"],
+    ["target/release/legend", "usr/bin/", "755"],
     ["target/release/legend_db_server", "usr/bin/", "755"],
-    ["assets/icon/legend_db.png", "usr/share/icons/hicolor/48x48/apps/legend_db.png", "644"],
-    ["assets/legend_db.desktop", "usr/share/applications/", "644"],
+    ["asserts/icon/legend_db.png", "/usr/share/icons/apps/legend_db_logo.png", "644"],
+    ["asserts/files/legend_db.desktop", "usr/share/applications/", "644"],
+    ["asserts/files/legend_db.service", "/etc/systemd/system/", "644"],
+    ["asserts/files/legend_db.conf", "/etc/legend_db/", "644"],
 ]
 extended-description = """\
 This is a simple SQL database implemented using Rust

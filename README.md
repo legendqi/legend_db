@@ -1,6 +1,6 @@
-# legend_db
+# legend_db  ![legend_db](./asserts/icon/legend_db_logo.png)
 
-## SQL数据库架构概述
+## SQL数据库架构概述 
 
 ### Parser解析器
 
@@ -61,9 +61,18 @@ Mysql**的架构**
 
 ## linux编译windows
 `cargo build --target x86_64-pc-windows-gnu --release`
+## 编译deb
+`cargo deb`
 ## 运行
 * 启动服务端legend_db_server
 * 启动客户端
 `legend -h 127.0.0.1 -P 8080 -u legend -p legend`
+## 安装
+`sudo dpkg -i legend_db_server_0.1.0_amd64.deb`
+## 启动服务
+`sudo systemctl start legend_db_server`
+## 启动客户端
+`legend -h 127.0.0.1 -P 8080 -u legend -p legend`
+
 ## 运行效果如下
 ![cmd](./docs/images/cmd.png)

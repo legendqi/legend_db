@@ -46,9 +46,9 @@ impl Planner {
                         values
                     }
                 },
-                Statement::Select {columns, from, where_clause, group_by, order_by, limit, offset } => {
+                Statement::Select {columns, from, where_clause, group_by, having, order_by, limit, offset } => {
                     let mut scan_node = self.build_from_item(from, &where_clause)?;
-                    // 函数支持
+                    // aggregate, group by
                     let mut has_agg = false;
                     if !columns.is_empty() {
                         for (expr, _) in columns.iter() {
@@ -67,6 +67,14 @@ impl Planner {
                             };
                         }
                     }
+                    // having
+                    if let Some(having) = having {
+                        scan_node = Node::Filter {
+                            source: Box::new(scan_node),
+                            predicate: having,
+                        }
+                    };
+                    // 排序 order by
                     if order_by.len() > 0 {
                         scan_node = Node::OrderBy {
                             source: Box::new(scan_node),
@@ -152,7 +160,7 @@ impl Planner {
         )
     }
     
-    pub fn build_from_item(&self, from_item: FromItem, expression: &Option<Expression>) -> LegendDBResult<Node> {
+    pub fn build_from_item(&self, from_item: FromItem, expression: &Option<Vec<Expression>>) -> LegendDBResult<Node> {
         Ok(match from_item { 
             FromItem::Table { name, alias: _ } => {
                 Node::Scan {

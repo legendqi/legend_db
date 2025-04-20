@@ -34,7 +34,7 @@ impl<'a> Parser<'a> {
         // 查看第一个token类型
         match self.custom_peek()? {
             Some(Token::Keyword(Keyword::Create)) => self.parse_ddl(),
-            Some(Token::Keyword((Keyword::Use))) => self.parse_use(),
+            Some(Token::Keyword(Keyword::Use)) => self.parse_use(),
             Some(Token::Keyword(Keyword::Insert)) => self.parse_insert(),
             Some(Token::Keyword(Keyword::Select)) => self.parse_select(),
             Some(Token::Keyword(Keyword::Update)) => self.parse_update(),
@@ -123,6 +123,7 @@ impl<'a> Parser<'a> {
             from: self.parse_from()?,
             where_clause: self.parse_where_clause()?,
             group_by: self.parse_group_by()?,
+            having: self.parse_having()?,
             order_by: self.parse_order_by()?,
             limit: {
                 if self.next_if_token(Token::Keyword(Keyword::Limit)).is_some() {
@@ -279,27 +280,59 @@ impl<'a> Parser<'a> {
     // }
 
     // 解析operation expression
-    fn parse_operation_expression(&mut self) -> LegendDBResult<Expression> {
+    fn parser_having_expression(&mut self) -> LegendDBResult<Expression> {
         let left = self.parse_expression()?;
-        match self.custom_next()? {
-            Token::Equal => {
-                let right = self.parse_expression()?;
-                Ok(Expression::Operation(Operation::Equal(Box::new(left), Box::new(right))))
-            },
-            Token::NotEqual => {
-                let right = self.parse_expression()?;
-                Ok(Expression::Operation(Operation::NotEqual(Box::new(left), Box::new(right))))
-            },
-            Token::GreaterThan => {
-                let right = self.parse_expression()?;
-                Ok(Expression::Operation(Operation::GreaterThan(Box::new(left), Box::new(right))))
-            },
-            Token::LessThan => {
-                let right = self.parse_expression()?;
-                Ok(Expression::Operation(Operation::LessThan(Box::new(left), Box::new(right))))
-            },
-            _ => Err(LegendDBError::NotSupported)
+        Ok(match self.custom_next()? {
+            Token::Equal => Expression::Operation(Operation::Equal(
+                Box::new(left),
+                Box::new(self.parse_expression()?),
+            )),
+            Token::GreaterThan => Expression::Operation(Operation::GreaterThan(
+                Box::new(left),
+                Box::new(self.parse_expression()?),
+            )),
+            Token::LessThan => Expression::Operation(Operation::LessThan(
+                Box::new(left),
+                Box::new(self.parse_expression()?),
+            )),
+            Token::NotEqual => Expression::Operation(Operation::NotEqual(
+                Box::new(left),
+                Box::new(self.parse_expression()?),
+            )),
+            _ => return Err(LegendDBError::Internal("Unexpected token".into())),
+        })
+    }
+    fn parse_operation_expression(&mut self) -> LegendDBResult<Option<Vec<Expression>>> {
+        let mut conditions = Vec::new();
+        loop {
+            let left = self.parse_expression()?;
+            
+            let op = self.custom_next()?;
+            match op {
+                Token::Equal => {
+                    let right = self.parse_expression()?;
+                    conditions.push(Expression::Operation(Operation::Equal(Box::new(left), Box::new(right))));
+                },
+                Token::NotEqual => {
+                    let right = self.parse_expression()?;
+                    conditions.push(Expression::Operation(Operation::NotEqual(Box::new(left), Box::new(right))));
+                },
+                Token::GreaterThan => {
+                    let right = self.parse_expression()?;
+                    conditions.push(Expression::Operation(Operation::GreaterThan(Box::new(left), Box::new(right))));
+                },
+                Token::LessThan => {
+                    let right = self.parse_expression()?;
+                    conditions.push(Expression::Operation(Operation::LessThan(Box::new(left), Box::new(right))));
+                },
+                _ => return Err(LegendDBError::NotSupported)
+            }
+            if self.next_if_token(Token::Keyword(Keyword::And)).is_none() && self.next_if_token(Token::Keyword(Keyword::Or)).is_none(){
+                break;
+            }
         }
+        Ok(Some(conditions))
+
     }
     // 解析表达式
     fn parse_expression(&mut self) -> LegendDBResult<Expression> {
@@ -340,11 +373,11 @@ impl<'a> Parser<'a> {
     }
     
     // 解析where子句
-    fn parse_where_clause(&mut self) -> LegendDBResult<Option<Expression>> {
+    fn parse_where_clause(&mut self) -> LegendDBResult<Option<Vec<Expression>>> {
         if self.next_if_token(Token::Keyword(Keyword::Where)).is_none() {
             return Ok(None);
         }
-        Ok(Some(self.parse_operation_expression()?))
+        Ok(self.parse_operation_expression()?)
     }
     
     // 解析order by排序
@@ -450,7 +483,13 @@ impl<'a> Parser<'a> {
         // 解析字段
         Ok(FromItem::Table {name: self.next_ident()?, alias})
     }
-
+    
+    fn parse_having(&mut self) -> LegendDBResult<Option<Expression>> {
+        if self.next_if_token(Token::Keyword(Keyword::Having)).is_none() {
+            return Ok(None);
+        }
+        Ok(Some(self.parser_having_expression()?))
+    }
     fn parse_group_by(&mut self) -> LegendDBResult<Option<Expression>> {
         if self.next_if_token(Token::Keyword(Keyword::Group)).is_none() {
             return Ok(None);
@@ -646,9 +685,9 @@ use std::collections::BTreeMap;
         let mut columns = BTreeMap::new();
         columns.insert("a".to_string(), Consts::Integer(1).into());
         columns.insert("b".to_string(), Consts::Integer(2).into());
-        let mut where_clause = BTreeMap::new();
-        where_clause.insert("c".to_string(), Consts::Integer(3).into());
-        where_clause.insert("d".to_string(), Consts::Integer(4).into());
+        // let mut where_clause = BTreeMap::new();
+        // where_clause.insert("c".to_string(), Consts::Integer(3).into());
+        // where_clause.insert("d".to_string(), Consts::Integer(4).into());
         assert_eq!(
             stmt,
             Statement::Update {
@@ -671,6 +710,14 @@ use std::collections::BTreeMap;
     #[test]
     fn test_parser_drop_database() -> LegendDBResult<()> {
         let sql = "drop database test;";
+        let stmt = Parser::new(sql).parse()?;
+        println!("{:?}", stmt);
+        Ok(())
+    }
+    
+    #[test]
+    fn test_select_where() -> LegendDBResult<()> {
+        let sql = "select b, sum(c) from t1;";
         let stmt = Parser::new(sql).parse()?;
         println!("{:?}", stmt);
         Ok(())

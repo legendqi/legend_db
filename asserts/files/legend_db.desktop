@@ -2,8 +2,8 @@
 Name=LegendDB
 Comment=LegendDB
 GenericName=LegendDB
-Exec=/usr/bin/goland %U
-Icon=/usr/share/icons/hicolor/48x48/apps/legend_db.png
+Exec=/usr/bin/legend_db_server %U
+Icon=/usr/share/icons/apps/legend_db_logo.png
 Type=Application
 StartupNotify=true
 Categories=Office;WordProcessor;

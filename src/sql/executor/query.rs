@@ -1,17 +1,18 @@
 use std::cmp::Ordering;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 use crate::sql::engine::engine::Transaction;
 use crate::sql::executor::executor::{Executor, ResultSet};
-use crate::sql::parser::ast::{Expression, OrderDirection};
+use crate::sql::parser::ast::{evaluate_expr, Expression, OrderDirection};
 use crate::custom_error::{LegendDBError, LegendDBResult};
+use crate::sql::types::Value;
 
 pub struct ScanExecutor {
     table_name: String,
-    filter: Option<Expression>
+    filter: Option<Vec<Expression>>
 }
 
 impl ScanExecutor {
-    pub fn new(table_name: String, filter: Option<Expression>) -> Box<Self> {
+    pub fn new(table_name: String, filter: Option<Vec<Expression>>) -> Box<Self> {
         Box::new(Self {
             table_name,
             filter
@@ -202,6 +203,48 @@ impl<T: Transaction> Executor<T> for ProjectionExecutor<T> {
                 Ok(ResultSet::Scan { columns: new_columns, rows: new_row })
             },
             _ => Err(LegendDBError::Internal("Unexpected result set".into()))
+        }
+    }
+}
+
+pub struct FilterExecutor<T: Transaction> {
+    source: Box<dyn Executor<T>>,
+    predicate: Expression,
+}
+
+impl<T: Transaction> FilterExecutor<T> {
+    pub fn new(source: Box<dyn Executor<T>>, predicate: Expression) -> Box<Self> {
+        Box::new(
+            Self {
+                source,
+                predicate,
+            }
+        )
+    }
+}
+
+impl<T: Transaction> Executor<T> for FilterExecutor<T> {
+    fn execute(self: Box<Self>, txn: &mut T) -> LegendDBResult<ResultSet> {
+        match self.source.execute(txn)? { 
+            ResultSet::Scan {columns, rows} => {
+                let mut new_rows = Vec::new();
+                for row in rows {
+                    match evaluate_expr(&self.predicate, &columns, &row, &columns, &row)? { 
+                        Value::Null => {},
+                        Value::Boolean(true) => {
+                            new_rows.push(row);
+                        },
+                        Value::Boolean(false) => {}
+                        _ => {
+                            return Err(LegendDBError::Internal("Unexpected result set".into()))
+                        }
+                    }
+                }
+                Ok(ResultSet::Scan { columns, rows: new_rows })
+            },
+            _ => {
+                Err(LegendDBError::Internal("Unexpected result set".into()))
+            }
         }
     }
 }

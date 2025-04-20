@@ -3,7 +3,7 @@ use crate::sql::executor::databases::{CreateDataBaseExecutor, DropDataBaseExecut
 use crate::sql::executor::delete::DeleteExecutor;
 use crate::sql::executor::insert::InsertExecutor;
 use crate::sql::executor::join::NestLoopJoinExecutor;
-use crate::sql::executor::query::{LimitExecutor, OffsetExecutor, OrderExecutor, ProjectionExecutor, ScanExecutor};
+use crate::sql::executor::query::{FilterExecutor, LimitExecutor, OffsetExecutor, OrderExecutor, ProjectionExecutor, ScanExecutor};
 use crate::sql::executor::schema::{CreateTableExecutor, DropTableExecutor};
 use crate::sql::executor::update::UpdateExecutor;
 use crate::sql::plan::node::Node;
@@ -33,6 +33,7 @@ impl<T: Transaction + 'static> dyn Executor<T> {
             Node::Offset {source, offset} => OffsetExecutor::new(Self::build(*source), offset),
             Node::Projection {source, columns} => ProjectionExecutor::new(Self::build(*source), columns),
             Node::Aggregate {source, expr, group_by} => AggregateExecutor::new(Self::build(*source), expr, group_by),
+            Node::Filter {source, predicate} => FilterExecutor::new(Self::build(*source), predicate),
             Node::NestedLoopJoin {left, right, predicate, outer} => NestLoopJoinExecutor::new(Self::build(*left), Self::build(*right), predicate, outer),
             Node::UseDatabase {database_name} => UseDatabaseExecutor::new(database_name),
         }

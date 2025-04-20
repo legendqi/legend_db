@@ -30,7 +30,7 @@ impl<T: Transaction> Executor<T> for AggregateExecutor<T> {
             let mut new_row = Vec::new();
             let mut new_col = Vec::new();
             // 计算聚合函数 如果是分组的计算，
-            let mut agg_calculation = |col_val: Option<&Value>, row: &Vec<Vec<Value>>| -> LegendDBResult<(Vec<Value>)> {
+            let mut agg_calculation = |col_val: Option<&Value>, row: &Vec<Vec<Value>>| -> LegendDBResult<Vec<Value>> {
                 let mut new_row = Vec::new();
                 // 此处也需要使用借用类型
                 for (expr, alias) in &self.expressions {
@@ -38,13 +38,13 @@ impl<T: Transaction> Executor<T> for AggregateExecutor<T> {
                         Expression::Function(func_name, col_name) => {
                             let calculator = <dyn Calculator>::build(&func_name)?;
                             let value = calculator.calculate(&col_name, &columns, row)?;
-                            new_row.push(value);
                             // min(a)            -> min
                             // min(a) as min_val -> min_val
                             // 有别名就取别名，没有别名就取函数名
                             if new_col.len() < self.expressions.len() {
                                 new_col.push(if let Some(alias) = alias { alias.clone() } else { func_name.clone() })
                             }
+                            new_row.push(value);
                         },
                         // group by的列
                         Expression::Field(col) => {
@@ -57,12 +57,17 @@ impl<T: Transaction> Executor<T> for AggregateExecutor<T> {
                                 new_col.push(if let Some(alias) = alias { alias.clone() } else { col.clone() });
                             }
                             // 此处col_val在Expression::Field(col)的match情况中，使用了就回收了，而前面是有所有权的，所以这儿可以使用借用类型
-                            new_row.push(col_val.unwrap().clone());
+                            match col_val {
+                                None => new_row.push(Null),
+                                Some(value) => {
+                                    new_row.push(value.clone());
+                                }
+                            }
                         }
                         _ => return Err(LegendDBError::Internal("Unexpected expression".to_string()))
                     }
                 }
-                return Ok((new_row))
+                return Ok(new_row)
             };
             // 判断是否有group_by
             // select c2, min(c1), max(c3) from t group by c2;
@@ -176,11 +181,11 @@ impl Calculator for Min {
         // NULL的时候跳过，如果全为NULL，返回NULL
         let mut values = Vec::new();
         for row in row.iter() {
-            if row[position] != Value::Null {
+            if row[position] != Null {
                 values.push(&row[position]);
             }
         }
-        let mut min = Value::Null;
+        let mut min = Null;
         // Value 实现了 PartialOrd
         if !values.is_empty() {
             // NULL 值是跳过的，这儿可以直接unwrap()

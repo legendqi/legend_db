@@ -1,6 +1,6 @@
 use crate::sql::engine::engine::Transaction;
 use crate::sql::executor::executor::{Executor, ResultSet};
-use crate::sql::parser::ast::{Expression, Operation};
+use crate::sql::parser::ast::{evaluate_expr, Expression};
 use crate::sql::types::Value;
 use crate::custom_error::{LegendDBError, LegendDBResult};
 
@@ -74,33 +74,5 @@ impl<T: Transaction> Executor<T> for NestLoopJoinExecutor<T> {
             }
         }
         Err(LegendDBError::Internal("Unexpected result set".into()))
-    }
-}
-
-fn evaluate_expr(expression: &Expression, left_col: &Vec<String>, left_row: &Vec<Value>, right_col: &Vec<String>, right_row: &Vec<Value>) -> LegendDBResult<Value> {
-    match expression {
-        Expression::Field(col_name) => {
-            let pos = left_col.iter().position(|x| *x == *col_name).ok_or(LegendDBError::Internal(format!("Column {} not found", col_name)));
-            Ok(left_row[pos?].clone())
-        },
-        Expression::Operation(Operation::Equal(left, right)) => {
-            let left_val = evaluate_expr(left, left_col, left_row, right_col, right_row)?;
-            let right_val = evaluate_expr(right, right_col, right_row, left_col, left_row)?;
-            match (left_val, right_val) {
-                (Value::Integer(left_val), Value::Integer(right_val)) => Ok(Value::Boolean(left_val == right_val)),
-                (Value::Boolean(left_val), Value::Boolean(right_val)) => Ok(Value::Boolean(left_val == right_val)),
-                (Value::Float(left_val), Value::Float(right_val)) => Ok(Value::Boolean(left_val == right_val)),
-                (Value::Integer(left_val), Value::Float(right_val)) => Ok(Value::Boolean(left_val as f64 == right_val)),
-                (Value::Float(left_val), Value::Integer(right_val)) => Ok(Value::Boolean(left_val == right_val as f64)),
-                (Value::String(left_val), Value::String(right_val)) => Ok(Value::Boolean(left_val == right_val)),
-                (Value::Null, _) => Ok(Value::Null),
-                (_, Value::Null) => Ok(Value::Null),
-                (left, right) => Err(LegendDBError::Internal(format!("can not compare expression {:?} and {:?}", left, right))),
-            }
-        },
-        Expression::Operation(Operation::NotEqual(left, right)) => todo!(),
-        Expression::Operation(Operation::GreaterThan(left, right)) => todo!(),
-        Expression::Operation(Operation::LessThan(left, right)) => todo!(),
-        _ => Err(LegendDBError::Internal("Unexpected expression".into()))
     }
 }

@@ -22,7 +22,7 @@ pub enum Node {
 
     Scan {
         table_name: String,
-        filter: Option<Expression>
+        filter: Option<Vec<Expression>>
     },
 
     Delete {
@@ -69,6 +69,10 @@ pub enum Node {
         source: Box<Node>,
         expr: Vec<(Expression, Option<String>)>,
         group_by: Option<Expression>,
+    },
+    Filter {
+        source: Box<Node>,
+        predicate: Expression,
     },
     CreateDatabase {
         database_name: String,

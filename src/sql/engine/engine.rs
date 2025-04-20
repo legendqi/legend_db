@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use crate::sql::executor::executor::ResultSet;
 use crate::sql::parser::ast::Expression;
 use crate::sql::parser::parser::Parser;
@@ -57,7 +56,7 @@ pub trait Transaction {
     fn delete_row(&mut self, table: &Table, id: &Value) -> LegendDBResult<()>;
 
     // 扫描表
-    fn scan_table(&mut self, table_name: String, filter: Option<Expression>) -> LegendDBResult<Vec<Row>>;
+    fn scan_table(&mut self, table_name: String, filter: Option<Vec<Expression>>) -> LegendDBResult<Vec<Row>>;
 
     //获取表信息
     fn get_table(&self, table: String) -> LegendDBResult<Option<Table>>;
@@ -99,4 +98,20 @@ impl<E: Engine + 'static> Session<E>  {
             }
         }
     }
+    
+    // 获取表信息
+    pub fn get_table(&self, table_name: String) -> LegendDBResult<String> {
+        let txn = self.engine.begin()?;
+        let table = txn.get_table_must(table_name)?;
+        txn.commit()?;
+        Ok(table.to_string())
+    }
+    
+    pub fn get_table_names(&self) -> LegendDBResult<String> {
+        let mut txn = self.engine.begin()?;
+        let table_names = txn.get_table_names()?;
+        txn.commit()?;
+        Ok(table_names.join(",\n"))
+    }
+
 }

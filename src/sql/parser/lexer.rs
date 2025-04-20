@@ -226,7 +226,6 @@ pub enum Token {
     // 小于号
     LessThan,
     // 等于号
-    DoubleEqual,
     // 不等于号
     NotEqual,
     // 空白
@@ -258,7 +257,6 @@ impl Display for Token {
             Token::Equal => "=",
             Token::GreaterThan => ">",
             Token::LessThan => "<",
-            Token::DoubleEqual => "==",
             Token::NotEqual => "!=",
             Token::Whitespace => " ",
         })

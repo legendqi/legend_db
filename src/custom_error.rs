@@ -8,8 +8,8 @@ use bincode::error::DecodeError;
 use bincode::error::EncodeError;
 
 // 数据库默认存储路径
-pub static DEFAULT_DB_FOLDER: &'static str = "/etc/legend_db/";
-pub static CURRENT_DB_FILE: &'static str = "/etc/legend_db/current";
+pub static DEFAULT_DB_FOLDER: &'static str = "/var/lib/legend_db/";
+pub static CURRENT_DB_FILE: &'static str = "/var/lib/legend_db/current";
 
 // 自定义Result
 pub type LegendDBResult<T> = Result<T, LegendDBError>;

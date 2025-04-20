@@ -4,7 +4,7 @@ use std::fs::File;
 use bincode::{config, Decode, Encode};
 use serde::{Deserialize, Serialize};
 use crate::sql::engine::engine::{Engine, Session, Transaction};
-use crate::sql::parser::ast::Expression;
+use crate::sql::parser::ast::{evaluate_expr, Expression, Operation};
 use crate::sql::schema::Table;
 use crate::storage;
 use crate::storage::engine::Engine as StorageEngine;
@@ -56,15 +56,6 @@ impl<E: StorageEngine> Engine for KVEngine<E> {
 #[derive(Debug, Clone)]
 pub struct KVTransaction<E: StorageEngine> {
     pub txn: MvccTransaction<E>,
-}
-
-fn check_row_conditions(row: &Vec<Value>, conditions: Vec<(usize, Value)>) -> bool {
-    for (index, expected_value) in conditions {
-        if row.get(index) != Some(&expected_value) {
-            return false;
-        }
-    }
-    true
 }
 
 impl<E: StorageEngine> KVTransaction<E> {
@@ -199,7 +190,7 @@ impl<E: StorageEngine> Transaction for KVTransaction<E> {
         Ok(names)
     }
 
-    fn scan_table(&mut self, table_name: String, filter: Option<Expression>) -> LegendDBResult<Vec<Row>> {
+    fn scan_table(&mut self, table_name: String, filter: Option<Vec<Expression>>) -> LegendDBResult<Vec<Row>> {
         let table = self.get_table_must(table_name.clone())?;
         let prefix = KeyPrefix::Row(table_name.clone()).encode()?;
         let config = config::standard();
@@ -208,26 +199,30 @@ impl<E: StorageEngine> Transaction for KVTransaction<E> {
         for result in results {
             let (row, _) = bincode::decode_from_slice(&result.value, config)?;
             // 根据filter进行过滤
-            match filter { 
+            match filter {
                 None => {
                     rows.push(row);
                 },
                 Some(ref filters) => {
-                    let mut conditions = Vec::new();
-                    for (key, value) in filters.iter() {
-                        let col_index = table.get_column_index(key.as_str())?;
-                        let value = Value::from_expression(value.to_owned());
-                        conditions.push((col_index, value));
-                    }
-                    if check_row_conditions(&row, conditions) {
-                        rows.push(row);
+                    let table_cols = table.columns.iter().map(|c| c.name.clone()).collect::<Vec<_>>();
+                    for filter in filters {
+                        match evaluate_expr(filter, &table_cols, &row, &table_cols, &row)? {
+                            Value::Boolean(true) => {
+                                rows.push(row.clone());
+                            },
+                            Value::Null => {}
+                            Value::Boolean(false) => {}
+                            _ => {
+                                return Err(LegendDBError::Internal("filter is not match".to_string()));
+                            }
+                        }
                     }
                 }
             }
         }
         Ok(rows)
     }
-    
+
 
     fn get_table(&self, table: String) -> LegendDBResult<Option<Table>> {
         // let bytes = to_bytes::<Error>(&value).unwrap();
@@ -443,6 +438,34 @@ mod tests {
             ResultSet::Scan { columns, rows } => {
                 print!("{:?}", columns);
                 print!("{:?}", rows);
+            }
+            _ => unreachable!(),
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn test_where_great_group() -> LegendDBResult<()> {
+        let p = tempfile::tempdir()?.into_path().join("sqldb-log");
+        let kvengine = KVEngine::new(DiskEngine::new(p.clone())?);
+        let mut s = kvengine.session()?;
+        s.execute("create table t1 (a int primary key, b text, c float);")?;
+        s.execute("insert into t1 values (1, 'a', 1.1);")?;
+        s.execute("insert into t1 values (2, 'c', 2.2);")?;
+        s.execute("insert into t1 values (3, 'a', 3.3);")?;
+        s.execute("insert into t1 values (4, 'c', 3.3);")?;
+        // match s.execute("select * from t1 where a > 2;")? {
+        //     ResultSet::Scan { columns, rows } => {
+        //         println!("{:?}", columns);
+        //         println!("{:?}", rows);
+        //     }
+        //     _ => unreachable!(),
+        // }
+
+        match s.execute("select b, sum(c) from t1 having sum > 5; ")? {
+            ResultSet::Scan { columns, rows } => {
+                println!("{:?}", columns);
+                println!("{:?}", rows);
             }
             _ => unreachable!(),
         }

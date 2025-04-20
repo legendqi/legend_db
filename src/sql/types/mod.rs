@@ -124,7 +124,6 @@ impl Value {
             // Value::Binary(_) => Some(DataType::Binary),
             // Value::Json(_) => Some(DataType::String),
             // Value::Jsonb(_) => Some(DataType::String),
-            _ => None
         }
     }
     

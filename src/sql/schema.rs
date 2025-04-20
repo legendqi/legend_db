@@ -1,3 +1,4 @@
+use std::fmt::{Display, Formatter};
 use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use crate::sql::types::{DataType, Row, Value};
@@ -65,6 +66,23 @@ impl Table {
     }
 }
 
+impl Display for Table {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        // let mut col_desc = String::new();
+        // for column in &self.columns {
+        //     col_desc += &format!("{}", column);
+        //     col_desc += ", ";
+        // }
+        //  下面的写法更优雅
+        let columns_desc = self.columns
+            .iter()
+            .map(|c| format!("{}", c))
+            .collect::<Vec<_>>()
+            .join(",\n");
+        write!(f, "CREATE TABLE {} ({})", self.name, columns_desc)
+    }
+}
+
 #[derive(Serialize, Deserialize, Encode, Decode, Debug, PartialEq)]
 
 pub struct Column {
@@ -73,4 +91,20 @@ pub struct Column {
     pub nullable: bool,
     pub default_value: Option<Value>,
     pub is_primary_key: bool,
+}
+
+impl Display for Column {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let mut column_description = format!("{} {:?}", self.name, self.data_type);
+        if self.is_primary_key {
+            column_description += " PRIMARY KEY";
+        }
+        if !self.nullable && !self.is_primary_key {
+            column_description += " NOT NULL";
+        }
+        if let Some(default_value) = &self.default_value {
+            column_description += &format!(" DEFAULT {}", default_value);
+        }
+        write!(f, "{}", column_description)
+    }
 }
